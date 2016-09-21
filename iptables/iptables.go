@@ -5,9 +5,10 @@ import (
 	"os/exec"
 )
 
-const INTERFACE = "eth0"
+var INTERFACE = "eth0"
 
-func Init() error {
+func Init(Interface string) error {
+	INTERFACE = Interface
 	err := exec.Command("sysctl", "-w", "net.ipv4.ip_forward=1").Run()
 	if err != nil {
 		return err

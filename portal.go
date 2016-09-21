@@ -1,11 +1,14 @@
 package main
 
 import (
-	"github.com/bahusvel/TunnelBeast/auth"
-	"github.com/bahusvel/TunnelBeast/iptables"
 	"log"
 	"net/http"
+	"os"
 	"strings"
+
+	"github.com/bahusvel/TunnelBeast/auth"
+	"github.com/bahusvel/TunnelBeast/config"
+	"github.com/bahusvel/TunnelBeast/iptables"
 )
 
 const PORTAL_TEMPLATE = `
@@ -54,54 +57,6 @@ button {
   transition: all 0.3 ease;
   cursor: pointer;
 }
-.form button:hover,.form button:active,.form button:focus {
-  background: #43A047;
-}
-.form .message {
-  margin: 15px 0 0;
-  color: #b3b3b3;
-  font-size: 12px;
-}
-.form .message a {
-  color: #4CAF50;
-  text-decoration: none;
-}
-.form .register-form {
-  display: none;
-}
-.container {
-  position: relative;
-  z-index: 1;
-  max-width: 300px;
-  margin: 0 auto;
-}
-.container:before, .container:after {
-  content: "";
-  display: block;
-  clear: both;
-}
-.container .info {
-  margin: 50px auto;
-  text-align: center;
-}
-.container .info h1 {
-  margin: 0 0 15px;
-  padding: 0;
-  font-size: 36px;
-  font-weight: 300;
-  color: #1a1a1a;
-}
-.container .info span {
-  color: #4d4d4d;
-  font-size: 12px;
-}
-.container .info span a {
-  color: #000000;
-  text-decoration: none;
-}
-.container .info span .fa {
-  color: #EF3B3A;
-}
 body {
   background: #76b852; /* fallback for old browsers */
   background: -webkit-linear-gradient(right, #76b852, #8DC26F);
@@ -129,8 +84,68 @@ body {
 </html>
 `
 
+const LOGOUT_TEMPLATE = `
+<html>
+<head>
+<style>
+@import url(https://fonts.googleapis.com/css?family=Roboto:300);
+
+.login-page {
+  width: 360px;
+  padding: 8% 0 0;
+  margin: auto;
+}
+form {
+  position: relative;
+  z-index: 1;
+  background: #FFFFFF;
+  max-width: 360px;
+  margin: 0 auto 100px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+}
+button {
+  font-family: "Roboto", sans-serif;
+  text-transform: uppercase;
+  outline: 0;
+  background: #4CAF50;
+  width: 100%;
+  border: 0;
+  padding: 15px;
+  color: #FFFFFF;
+  font-size: 14px;
+  -webkit-transition: all 0.3 ease;
+  transition: all 0.3 ease;
+  cursor: pointer;
+}
+body {
+  background: #76b852; /* fallback for old browsers */
+  background: -webkit-linear-gradient(right, #76b852, #8DC26F);
+  background: -moz-linear-gradient(right, #76b852, #8DC26F);
+  background: -o-linear-gradient(right, #76b852, #8DC26F);
+  background: linear-gradient(to left, #76b852, #8DC26F);
+  font-family: "Roboto", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+</style>
+</head>
+<body>
+<div class="login-page" >
+    <form class="login-form" action="/logout" method="get">
+	  <p>You are already logged in</p>
+      <button type="submit">logout</button>
+	  <p>Powered by <a href="https://github.com/bahusvel/TunnelBeast">TunnelBeast</a></p>
+    </form>
+  </div>
+</div>
+</body>
+</html>
+`
+
 var connectionTable = map[string]string{}
-var authProvider auth.AuthProvider = auth.LDAPAuth{LDAPAddr: "192.168.1.90:389", DCString: "dc=unitecloud,dc=net"}
+var authProvider auth.AuthProvider
 
 func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Api access", r.RemoteAddr)
@@ -141,8 +156,12 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ERROR"))
 		return
 	}
+	clientIP := strings.Split(r.RemoteAddr, ":")[0]
+	if _, exists := connectionTable[clientIP]; exists {
+		w.Write([]byte("LOGGEDIN"))
+		return
+	}
 	if authProvider.Authenticate(username, password, internalip) {
-		clientIP := strings.Split(r.RemoteAddr, ":")[0]
 		err := iptables.NewRoute(clientIP, internalip)
 		if err != nil {
 			w.Write([]byte(err.Error()))
@@ -173,16 +192,27 @@ func SignoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func PortalEntryHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Portal access", r.RemoteAddr)
-	w.Write([]byte(PORTAL_TEMPLATE))
+	clientIP := strings.Split(r.RemoteAddr, ":")[0]
+	if _, exists := connectionTable[clientIP]; exists {
+		w.Write([]byte(LOGOUT_TEMPLATE))
+	} else {
+		w.Write([]byte(PORTAL_TEMPLATE))
+	}
 }
 
 func main() {
-	err := iptables.Init()
+	conf := config.Configuration{}
+	config.LoadConfig(os.Args[1], &conf)
+
+	authProvider = conf.AuthProvider
+	authProvider.Init()
+
+	err := iptables.Init(conf.ListenDev)
 	if err != nil {
-		log.Println("Error initializing IPtables", err)
+		log.Println("Error initializing iptables", err)
 		return
 	}
-	authProvider.Init()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", PortalEntryHandler)
 	mux.HandleFunc("/auth", AuthenticationHandler)
