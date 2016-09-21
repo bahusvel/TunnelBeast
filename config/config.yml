@@ -1,5 +1,5 @@
 listendev: eth0
-authmethod: ldap
+authmethod: test
 authprovider:
-    ldapaddr: "192.168.1.90:389"
-    dcstring: "dc=unitecloud,dc=net"
+    username: "denis"
+    password: "cp-x2520"

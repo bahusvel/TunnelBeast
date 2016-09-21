@@ -203,6 +203,7 @@ func PortalEntryHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	conf := config.Configuration{}
 	config.LoadConfig(os.Args[1], &conf)
+	log.Printf("%+v\n", conf)
 
 	authProvider = conf.AuthProvider
 	authProvider.Init()
