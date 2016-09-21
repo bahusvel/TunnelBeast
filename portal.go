@@ -24,7 +24,7 @@ form {
   background: #FFFFFF;
   max-width: 360px;
   margin: 0 auto 100px;
-  padding: 45px;
+  padding: 20px;
   text-align: center;
   box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
 }
@@ -120,6 +120,7 @@ body {
       <input type="password" name="password" placeholder="password"/>
 	  <input type="text" name="internalip" placeholder="internalip"/>
       <button type="submit">login</button>
+	  <p>Powered by <a href="https://github.com/bahusvel/TunnelBeast">TunnelBeast</a></p>
     </form>
   </div>
 </div>
