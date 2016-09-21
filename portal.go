@@ -201,6 +201,9 @@ func PortalEntryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	if len(os.Args) != 2 {
+		log.Fatalln("Usage: TunnelBeast /path/to/config.yml")
+	}
 	conf := config.Configuration{}
 	config.LoadConfig(os.Args[1], &conf)
 	log.Printf("%+v\n", conf)
