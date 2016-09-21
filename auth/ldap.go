@@ -1,8 +1,9 @@
 package auth
 
 import (
-	"gopkg.in/ldap.v2"
 	"log"
+
+	"gopkg.in/ldap.v2"
 )
 
 type LDAPAuth struct {

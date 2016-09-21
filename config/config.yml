@@ -1,5 +1,5 @@
 listendev: eth0
 authmethod: test
 authprovider:
-    username: "denis"
-    password: "cp-x2520"
+    Username: "denis"
+    Password: "cp-x2520"

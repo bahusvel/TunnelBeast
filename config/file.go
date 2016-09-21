@@ -1,8 +1,11 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"reflect"
 
 	"github.com/bahusvel/TunnelBeast/auth"
 
@@ -20,6 +23,38 @@ type configuration struct {
 	AuthProvider map[string]interface{}
 }
 
+func SetField(obj interface{}, name string, value interface{}) error {
+	structValue := reflect.ValueOf(obj).Elem()
+	structFieldValue := structValue.FieldByName(name)
+
+	if !structFieldValue.IsValid() {
+		return fmt.Errorf("No such field: %s in obj", name)
+	}
+
+	if !structFieldValue.CanSet() {
+		return fmt.Errorf("Cannot set %s field value", name)
+	}
+
+	structFieldType := structFieldValue.Type()
+	val := reflect.ValueOf(value)
+	if structFieldType != val.Type() {
+		return errors.New("Provided value type didn't match obj field type")
+	}
+
+	structFieldValue.Set(val)
+	return nil
+}
+
+func FillStruct(target interface{}, data map[string]interface{}) error {
+	for k, v := range data {
+		err := SetField(target, k, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func LoadConfig(filePath string, conf *Configuration) {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -33,8 +68,12 @@ func LoadConfig(filePath string, conf *Configuration) {
 	conf.ListenDev = tmpConfig.ListenDev
 	switch tmpConfig.AuthMethod {
 	case "ldap":
-		conf.AuthProvider = auth.LDAPAuth{LDAPAddr: tmpConfig.AuthProvider["ldapaddr"].(string), DCString: tmpConfig.AuthProvider["dcstring"].(string)}
+		tmpProvider := auth.LDAPAuth{}
+		FillStruct(&tmpProvider, tmpConfig.AuthProvider)
+		conf.AuthProvider = tmpProvider
 	case "test":
-		conf.AuthProvider = auth.TestAuth{Username: tmpConfig.AuthProvider["username"].(string), Password: tmpConfig.AuthProvider["password"].(string)}
+		tmpProvider := auth.TestAuth{}
+		FillStruct(&tmpProvider, tmpConfig.AuthProvider)
+		conf.AuthProvider = tmpProvider
 	}
 }
