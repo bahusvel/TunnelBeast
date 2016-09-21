@@ -58,6 +58,9 @@ func (this LDAPAuth) Authenticate(Username string, Password string, InternalIP s
 		log.Println(err)
 		return false
 	}
+	if this.IPAddressAttribute == "" {
+		return true
+	}
 	ipList, err := this.queryIPAddress(l, Username)
 	if err != nil {
 		log.Println(err)
