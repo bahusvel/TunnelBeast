@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/bahusvel/TunnelBeast/auth"
 	"github.com/bahusvel/TunnelBeast/iptables"
 	"log"
 	"net/http"
@@ -129,6 +130,7 @@ body {
 `
 
 var connectionTable = map[string]string{}
+var authProvider auth.AuthProvider = auth.LDAPAuth{LDAPAddr: "192.168.1.90:389", DCString: "dc=unitecloud,dc=net"}
 
 func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Api access", r.RemoteAddr)
@@ -139,7 +141,7 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ERROR"))
 		return
 	}
-	if username == "denis" && password == "cp-x2520" {
+	if authProvider.Authenticate(username, password, internalip) {
 		clientIP := strings.Split(r.RemoteAddr, ":")[0]
 		err := iptables.NewRoute(clientIP, internalip)
 		if err != nil {
@@ -180,6 +182,7 @@ func main() {
 		log.Println("Error initializing IPtables", err)
 		return
 	}
+	authProvider.Init()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", PortalEntryHandler)
 	mux.HandleFunc("/auth", AuthenticationHandler)
