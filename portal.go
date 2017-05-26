@@ -149,6 +149,7 @@ var authProvider auth.AuthProvider
 
 func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Api access", r.RemoteAddr)
+	w.Header().Set("Cache-Control", "no-cache")
 	username := r.URL.Query().Get("username")
 	password := r.URL.Query().Get("password")
 	internalip := r.URL.Query().Get("internalip")
@@ -168,7 +169,7 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		connectionTable[clientIP] = internalip
-		w.Write([]byte("OK"))
+		http.Redirect(w, r, "/", 302)
 	} else {
 		w.Write([]byte("ERROR"))
 	}
@@ -176,6 +177,7 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 
 func SignoutHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Logout request", r.RemoteAddr)
+	w.Header().Set("Cache-Control", "no-cache")
 	clientIP := strings.Split(r.RemoteAddr, ":")[0]
 	if internalIP, exists := connectionTable[clientIP]; exists {
 		delete(connectionTable, clientIP)
@@ -184,7 +186,7 @@ func SignoutHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(err.Error()))
 			return
 		}
-		w.Write([]byte("OK"))
+		http.Redirect(w, r, "/", 302)
 		return
 	}
 	w.Write([]byte("Not Logged In"))
@@ -192,6 +194,7 @@ func SignoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func PortalEntryHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Portal access", r.RemoteAddr)
+	w.Header().Set("Cache-Control", "no-cache")
 	clientIP := strings.Split(r.RemoteAddr, ":")[0]
 	if _, exists := connectionTable[clientIP]; exists {
 		w.Write([]byte(LOGOUT_TEMPLATE))
