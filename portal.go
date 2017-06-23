@@ -170,6 +170,7 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		connectionTable[clientIP] = internalip
 		http.Redirect(w, r, "/", 302)
+		w.Body.Close()
 	} else {
 		w.Write([]byte("ERROR"))
 	}
