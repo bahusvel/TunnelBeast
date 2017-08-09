@@ -19,5 +19,11 @@ TunnelBeast exposes an authentication portal (and HTTP API) to the world, throug
 3. Setup the config file
 4. Run TunnelBeast
 
+## Run from Command Line
+TunnelBeast supports both WebUI and command line
+1. Login: curl 'http://tunnel.unitecloud.net:666/auth?username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP'
+2. Logout: curl 'http://tunnel.unitecloud.net:666/logout?'
+
+
 # Internals
 TunnelBeast uses source IP to distinguish different clients hence if client A and client B have the same source IP (they are behind NAT/Gateway) they will see the same thing when trying to access TunnelBeast IP address. If you are worried about this you need to use TunnelBeast in multi IP mode. That way on successive logins clients will be given different public IPs to use.
