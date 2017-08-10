@@ -21,8 +21,8 @@ TunnelBeast exposes an authentication portal (and HTTP API) to the world, throug
 
 ## Run from Command Line
 TunnelBeast supports both WebUI and command line
-1. Login: curl 'http://tunnel.unitecloud.net:666/auth?username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP'
-2. Logout: curl 'http://tunnel.unitecloud.net:666/logout?'
+1. Login: curl 'http://$TunnelBeastIP:666/auth?username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP'
+2. Logout: curl 'http://$TunnelBeastIP:666/logout?'
 
 
 # Internals
