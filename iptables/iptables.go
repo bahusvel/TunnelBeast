@@ -5,6 +5,13 @@ import (
 	"os/exec"
 )
 
+type NATEntry struct {
+	SourceIP      string
+	DestinationIP string
+	ExternalPort  string
+	InternalPort  string
+}
+
 var INTERFACE = "eth0"
 
 func Init(Interface string) error {
@@ -28,9 +35,15 @@ func Init(Interface string) error {
 	return nil
 }
 
-func NewRoute(srcip string, dstip string) error {
-	cmd := exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-i", INTERFACE, "-s", srcip, "-j", "DNAT", "--to-destination", dstip)
+func NewRoute(entry NATEntry) error {
+	cmd := exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-i", INTERFACE, "-p", "tcp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP, "--dport", entry.ExternalPort, "--to-port", entry.InternalPort)
 	data, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println(string(data))
+		return err
+	}
+	cmd = exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-i", INTERFACE, "-p", "udp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP, "--dport", entry.ExternalPort, "--to-port", entry.InternalPort)
+	data, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Println(string(data))
 		return err
@@ -38,9 +51,15 @@ func NewRoute(srcip string, dstip string) error {
 	return nil
 }
 
-func DeleteRoute(srcip string, dstip string) error {
-	cmd := exec.Command("iptables", "-t", "nat", "-D", "PREROUTING", "-i", INTERFACE, "-s", srcip, "-j", "DNAT", "--to-destination", dstip)
+func DeleteRoute(entry NATEntry) error {
+	cmd := exec.Command("iptables", "-t", "nat", "-D", "PREROUTING", "-i", INTERFACE, "-p", "tcp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP, "--dport", entry.ExternalPort, "--to-port", entry.InternalPort)
 	data, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println(string(data))
+		return err
+	}
+	cmd = exec.Command("iptables", "-t", "nat", "-D", "PREROUTING", "-i", INTERFACE, "-p", "udp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP, "--dport", entry.ExternalPort, "--to-port", entry.InternalPort)
+	data, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Println(string(data))
 		return err

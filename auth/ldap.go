@@ -2,8 +2,9 @@ package auth
 
 import (
 	"fmt"
-	"gopkg.in/ldap.v2"
 	"log"
+
+	"gopkg.in/ldap.v2"
 )
 
 type LDAPAuth struct {
@@ -45,7 +46,26 @@ func ipAllowed(ip string, whitelist []string) bool {
 	return false
 }
 
-func (this LDAPAuth) Authenticate(Username string, Password string, InternalIP string) bool {
+func (this LDAPAuth) CheckSourceIP(srcip string) bool {
+	return true
+}
+
+func (this LDAPAuth) CheckDestinationIP(dstip string) bool {
+	/*
+		if this.IPAddressAttribute == "" {
+			return true
+		}
+		ipList, err := this.queryIPAddress(l, dstip)
+		if err != nil {
+			log.Println(err)
+			return false
+		}
+		return ipAllowed(dstip, ipList)
+	*/
+	return true
+}
+
+func (this LDAPAuth) Authenticate(Username string, Password string) bool {
 	l, err := ldap.Dial("tcp", this.LDAPAddr)
 	if err != nil {
 		log.Println(err)
@@ -58,13 +78,5 @@ func (this LDAPAuth) Authenticate(Username string, Password string, InternalIP s
 		log.Println(err)
 		return false
 	}
-	if this.IPAddressAttribute == "" {
-		return true
-	}
-	ipList, err := this.queryIPAddress(l, Username)
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-	return ipAllowed(InternalIP, ipList)
+	return true
 }
