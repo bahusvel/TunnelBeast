@@ -10,6 +10,17 @@
             margin: auto;
         }
 
+        .white-boxed {
+            position: relative;
+            z-index: 1;
+            background: #FFFFFF;
+            max-width: 360px;
+            margin: 0 auto 100px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+        }
+
         form {
             position: relative;
             z-index: 1;
@@ -76,6 +87,23 @@
 
 <body>
     <script type="text/javascript">
+        var LOGGED_IN = false;
+
+        var getJSON = function(url, callback) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.responseType = 'json';
+            xhr.onload = function() {
+                var status = xhr.status;
+                if (status == 200) {
+                    callback(null, xhr.response);
+                } else {
+                    callback(status);
+                }
+            };
+            xhr.send();
+        };
+
         function loginForm(form) {
             var error = "";
             var username = form.username.value;
@@ -102,9 +130,12 @@
             http.onreadystatechange = function() { //Call a function when the state changes.
                 if (http.readyState == 4 && http.status == 200) {
                     if (http.responseText == "OK") {
-                        console.log("Auth success")
+                        LOGGED_IN = true;
+                        document.getElementById("routes").removeAttribute("hidden");
+                        document.getElementById("mapform").removeAttribute("hidden");
+                        console.log("Auth success");
                     } else if (http.responseText == "ERROR AUTH") {
-                        console.log("Auth failed")
+                        console.log("Auth failed");
                     }
                 }
             }
@@ -122,7 +153,20 @@
             <button type="submit">login</button>
         </form>
 
-        <form class="add-form" action="/add" method="post" id="mapform">
+        <div class="white-boxed" id="routes" hidden="true">
+            Current Routes:
+            <br/>
+            <script>
+                if (LOGGED_IN) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', url, false);
+                    xhr.responseType = 'json';
+                    xhr.send();
+                }
+            </script>
+        </div>
+
+        <form class="add-form" action="/add" method="post" id="mapform" hidden="true">
             <input type="hidden" name="username" placeholder="Username" />
             <input type="hidden" name="password" placeholder="Password" />
             <input type="text" name="internalip" placeholder="Internal IP" />
