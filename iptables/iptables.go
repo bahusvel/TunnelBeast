@@ -37,13 +37,13 @@ func Init(Interface string) error {
 }
 
 func NewRoute(entry NATEntry) error {
-	cmd := exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-i", INTERFACE, "-p", "tcp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP, "--dport", entry.ExternalPort, "--to-port", entry.InternalPort)
+	cmd := exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-i", INTERFACE, "-p", "tcp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP+":"+entry.InternalPort, "--dport", entry.ExternalPort)
 	data, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Println(string(data))
 		return err
 	}
-	cmd = exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-i", INTERFACE, "-p", "udp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP, "--dport", entry.ExternalPort, "--to-port", entry.InternalPort)
+	cmd = exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-i", INTERFACE, "-p", "udp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP+":"+entry.InternalPort, "--dport", entry.ExternalPort)
 	data, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Println(string(data))
@@ -53,13 +53,13 @@ func NewRoute(entry NATEntry) error {
 }
 
 func DeleteRoute(entry NATEntry) error {
-	cmd := exec.Command("iptables", "-t", "nat", "-D", "PREROUTING", "-i", INTERFACE, "-p", "tcp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP, "--dport", entry.ExternalPort, "--to-port", entry.InternalPort)
+	cmd := exec.Command("iptables", "-t", "nat", "-D", "PREROUTING", "-i", INTERFACE, "-p", "tcp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP+":"+entry.InternalPort, "--dport", entry.ExternalPort)
 	data, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Println(string(data))
 		return err
 	}
-	cmd = exec.Command("iptables", "-t", "nat", "-D", "PREROUTING", "-i", INTERFACE, "-p", "udp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP, "--dport", entry.ExternalPort, "--to-port", entry.InternalPort)
+	cmd = exec.Command("iptables", "-t", "nat", "-D", "PREROUTING", "-i", INTERFACE, "-p", "udp", "-s", entry.SourceIP, "-j", "DNAT", "--to-destination", entry.DestinationIP+":"+entry.InternalPort, "--dport", entry.ExternalPort)
 	data, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Println(string(data))

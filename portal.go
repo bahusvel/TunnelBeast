@@ -60,6 +60,8 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("ERROR EXISTS"))
 			return
 		}
+	} else {
+		connectionTable[username] = EntrySet{}
 	}
 
 	err = iptables.NewRoute(entry)
@@ -69,13 +71,12 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	connectionTable[username][entry] = nil
-	http.Redirect(w, r, "/", 302)
 	//w.Body.Close()
 
 }
 
 func DeleteRoute(w http.ResponseWriter, r *http.Request) {
-	log.Println("Logout request", r.RemoteAddr)
+	log.Println("Delete request", r.RemoteAddr)
 	w.Header().Set("Cache-Control", "no-cache")
 	err := r.ParseForm()
 	if err != nil {
@@ -90,25 +91,31 @@ func DeleteRoute(w http.ResponseWriter, r *http.Request) {
 
 	entry := iptables.NATEntry{SourceIP: sourceip, DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport}
 
+	log.Println(entry)
+
 	if !authProvider.Authenticate(username, password) {
-		w.Write([]byte("ERROR"))
+		w.Write([]byte("ERROR AUTH"))
 		return
 	}
 
 	entries, ok := connectionTable[username]
-	if ok {
-		for _, oldEntry := range entries {
-			if entry == oldEntry {
-				err := iptables.DeleteRoute(entry)
-				if err != nil {
-					w.Write([]byte(err.Error()))
-					return
-				} else {
-					break
-				}
+	if !ok {
+		w.Write([]byte("ERROR"))
+		return
+	}
+
+	for _, oldEntry := range entries {
+		if entry == oldEntry {
+			err := iptables.DeleteRoute(entry)
+			if err != nil {
+				w.Write([]byte(err.Error()))
+				return
+			} else {
+				break
 			}
 		}
 	}
+
 	delete(connectionTable[username], entry)
 	w.Write([]byte("OK"))
 	return
@@ -149,15 +156,16 @@ func ListRoutes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*
+	entries := connectionTable[username]
+	log.Println(len(entries))
+	keys := make([]iptables.NATEntry, len(entries))
+	i := 0
+	for k := range entries {
+		keys[i] = k
+		i++
+	}
 
-		entries := connectionTable[username]
-		keys := make([]iptables.NATEntry, len(entries))
-		for k := range entries {
-			keys = append(keys, k)
-		}
-	*/
-	keys := []iptables.NATEntry{{SourceIP: "192.168.1.1", DestinationIP: "192.168.1.2", ExternalPort: "80", InternalPort: "8080"}}
+	//keys := []iptables.NATEntry{{SourceIP: "192.168.1.1", DestinationIP: "192.168.1.2", ExternalPort: "80", InternalPort: "8080"}}
 
 	data, err := json.Marshal(keys)
 	if err != nil {

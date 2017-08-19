@@ -118,21 +118,7 @@
 	<script type="text/javascript">
 		var USERNAME = "";
 		var PASSWORD = "";
-
-		var getJSON = function(url, callback) {
-			var xhr = new XMLHttpRequest();
-			xhr.open('GET', url, true);
-			xhr.responseType = 'json';
-			xhr.onload = function() {
-				var status = xhr.status;
-				if (status == 200) {
-					callback(null, xhr.response);
-				} else {
-					callback(status);
-				}
-			};
-			xhr.send();
-		};
+		var ROUTES = [];
 
 		function create(htmlStr) {
 			var frag = document.createDocumentFragment(),
@@ -144,19 +130,53 @@
 			return frag;
 		}
 
-		function showRoute(route) {
+		function deleteRoute(index) {
+			var route = ROUTES[index];
+
+			console.log(route);
+
+			var params = `username=${USERNAME}&password=${PASSWORD}&sourceip=${route.SourceIP}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', "/delete", false);
+
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send(params);
+
+			fetchRoutes();
+			return false;
+		}
+
+		function showRoute(route, index) {
 			var html =
 				`<div class="grey-field">
 									<p style="display:inline">
 									${route.SourceIP} -> ${route.ExternalPort}:${route.DestinationIP}:${route.InternalPort}
 									</p>
-									<div class="delete-button">
+									<div class="delete-button" onclick="deleteRoute(${index});">
 									-
 									</div>
 						</div>`
 
 			var fragment = create(html);
 			document.getElementById("routes").appendChild(fragment);
+		}
+
+		function addRoute(form) {
+			var internalip = form.internalip.value;
+			var externalport = form.externalport.value;
+			var internalport = form.internalport.value;
+
+			var params = `username=${USERNAME}&password=${PASSWORD}&internalip=${internalip}&externalport=${externalport}&internalport=${internalport}`;
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', "/add", false);
+
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send(params);
+
+			fetchRoutes();
+			return false;
 		}
 
 		function logoutForm(form) {
@@ -166,6 +186,7 @@
 			document.getElementById("mapform").setAttribute("hidden", "true");
 			document.getElementById("login-form").removeAttribute("hidden");
 			document.getElementById("logout-form").removeAttribute("hidden", "true");
+			return false;
 		}
 
 		function fetchRoutes() {
@@ -180,13 +201,15 @@
 			console.log(xhr.responseText);
 			var routes = JSON.parse(xhr.responseText);
 
+			ROUTES = routes;
+
 			var node = document.getElementById("routes")
 			while (node.hasChildNodes()) {
 				node.removeChild(node.lastChild);
 			}
 
 			for (var i = 0; i < routes.length; i++) {
-				showRoute(routes[i]);
+				showRoute(routes[i], i);
 			}
 		}
 
@@ -251,9 +274,7 @@
 		</div>
 
 
-		<form class="add-form" action="/add" method="post" id="mapform" hidden="true">
-			<input type="hidden" name="username" placeholder="Username" />
-			<input type="hidden" name="password" placeholder="Password" />
+		<form action="#" onsubmit="return addRoute(this);" id="mapform" hidden="true">
 			<input type="text" name="internalip" placeholder="Internal IP" />
 			<input type="text" name="internalport" placeholder="Internal Port" /> Select external port:
 			<select name="externalport" form="mapform">
