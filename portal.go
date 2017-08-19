@@ -18,6 +18,7 @@ type EntrySet map[iptables.NATEntry]interface{}
 var (
 	authProvider    auth.AuthProvider
 	connectionTable = map[string]EntrySet{}
+	portTable       = map[string]map[string]interface{}{}
 	PORTAL          *template.Template
 	LOGOUT          *template.Template
 	conf            config.Configuration
@@ -64,12 +65,28 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 		connectionTable[username] = EntrySet{}
 	}
 
+	availablePorts, ok := portTable[sourceip]
+
+	if !ok {
+		availablePorts = map[string]interface{}{}
+		for _, port := range conf.Ports {
+			availablePorts[port] = nil
+		}
+	}
+
+	if _, ok := availablePorts[entry.ExternalPort]; !ok {
+		w.Write([]byte("ERROR PORT OCCUPIED"))
+		return
+	}
+	delete(availablePorts, entry.ExternalPort)
+
 	err = iptables.NewRoute(entry)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return
 	}
 
+	portTable[sourceip] = availablePorts
 	connectionTable[username][entry] = nil
 	//w.Body.Close()
 
@@ -100,25 +117,24 @@ func DeleteRoute(w http.ResponseWriter, r *http.Request) {
 
 	entries, ok := connectionTable[username]
 	if !ok {
-		w.Write([]byte("ERROR"))
+		w.Write([]byte("ERROR NOT EXIST"))
 		return
 	}
 
-	for _, oldEntry := range entries {
-		if entry == oldEntry {
-			err := iptables.DeleteRoute(entry)
-			if err != nil {
-				w.Write([]byte(err.Error()))
-				return
-			} else {
-				break
-			}
-		}
+	if _, ok = entries[entry]; !ok {
+		w.Write([]byte("ERROR NOT EXIST"))
+		return
 	}
 
+	err = iptables.DeleteRoute(entry)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	portTable[sourceip][entry.ExternalPort] = nil
 	delete(connectionTable[username], entry)
 	w.Write([]byte("OK"))
-	return
 }
 
 func PortalEntryHandler(w http.ResponseWriter, r *http.Request) {
@@ -174,6 +190,34 @@ func ListRoutes(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+func ListPorts(w http.ResponseWriter, r *http.Request) {
+	log.Println("Port access", r.RemoteAddr)
+	w.Header().Set("Cache-Control", "no-cache")
+
+	sourceip := strings.Split(r.RemoteAddr, ":")[0]
+
+	var keys []string
+	entries, ok := portTable[sourceip]
+	if !ok {
+		keys = conf.Ports
+	} else {
+		keys = make([]string, len(entries))
+		i := 0
+		for k := range entries {
+			keys[i] = k
+			i++
+		}
+	}
+
+	log.Println(keys)
+
+	data, err := json.Marshal(keys)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Write(data)
+}
+
 func Authenticate(w http.ResponseWriter, r *http.Request) {
 	log.Println("List access", r.RemoteAddr)
 	w.Header().Set("Cache-Control", "no-cache")
@@ -214,6 +258,7 @@ func main() {
 	mux.HandleFunc("/", PortalEntryHandler)
 	mux.HandleFunc("/delete", DeleteRoute)
 	mux.HandleFunc("/add", AddRoute)
+	mux.HandleFunc("/ports", ListPorts)
 	mux.HandleFunc("/auth", Authenticate)
 	mux.HandleFunc("/list", ListRoutes)
 

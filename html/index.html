@@ -30,7 +30,7 @@
 			margin: 0 0 15px;
 			padding: 10px;
 			box-sizing: border-box;
-			font-size: 14px;
+			font-size: 12px;
 		}
 
 		form {
@@ -143,7 +143,9 @@
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 			xhr.send(params);
 
-			fetchRoutes();
+			console.log(xhr.responseText);
+
+			refresh();
 			return false;
 		}
 
@@ -175,7 +177,7 @@
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 			xhr.send(params);
 
-			fetchRoutes();
+			refresh();
 			return false;
 		}
 
@@ -185,7 +187,7 @@
 			document.getElementById("route-float").setAttribute("hidden", "true");
 			document.getElementById("mapform").setAttribute("hidden", "true");
 			document.getElementById("login-form").removeAttribute("hidden");
-			document.getElementById("logout-form").removeAttribute("hidden", "true");
+			document.getElementById("logout-form").setAttribute("hidden", "true");
 			return false;
 		}
 
@@ -213,6 +215,32 @@
 			}
 		}
 
+		function getPorts() {
+			var xhr = new XMLHttpRequest();
+			xhr.open('GET', "/ports", false);
+			xhr.send();
+
+			console.log(xhr.responseText);
+
+			var ports = JSON.parse(xhr.responseText);
+
+			var node = document.getElementById("port-select")
+
+			while (node.hasChildNodes()) {
+				node.removeChild(node.lastChild);
+			}
+
+			for (var i = 0; i < ports.length; i++) {
+				var frag = create(`<option value="${ports[i]}">${ports[i]}</option>`)
+				node.appendChild(frag);
+			}
+		}
+
+		function refresh() {
+			getPorts();
+			fetchRoutes();
+		}
+
 		function loginForm(form) {
 			var error = "";
 			var username = form.username.value;
@@ -227,33 +255,30 @@
 				alert(error);
 				return false;
 			}
-
 			var http = new XMLHttpRequest();
 			var url = "/auth";
 			var params = `username=${username}&password=${password}`;
 			http.open("POST", url, true);
-
-			//Send the proper header information along with the request
-			http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-
-			http.onreadystatechange = function() { //Call a function when the state changes.
+			http.setRequestHeader("Content-type",
+				"application/x-www-form-urlencoded");
+			http.onreadystatechange = function() {
 				if (http.readyState == 4 && http.status == 200) {
 					if (http.responseText == "OK") {
 						USERNAME = username;
 						PASSWORD = password;
-						document.getElementById("login-form").setAttribute("hidden", "true");
+						document.getElementById("login-form").setAttribute("hidden",
+							"true");
 						document.getElementById("route-float").removeAttribute("hidden");
 						document.getElementById("logout-form").removeAttribute("hidden");
 						document.getElementById("mapform").removeAttribute("hidden");
 						console.log("Auth success");
-						fetchRoutes();
+						refresh();
 					} else if (http.responseText == "ERROR AUTH") {
 						console.log("Auth failed");
 					}
 				}
 			}
 			http.send(params);
-
 			return false;
 		}
 	</script>
@@ -264,6 +289,7 @@
 			<input type="text" name="username" placeholder="Username" />
 			<input type="password" name="password" placeholder="Password" />
 			<button type="submit">login</button>
+			<p>Powered by <a href="https://github.com/bahusvel/TunnelBeast">TunnelBeast</a></p>
 		</form>
 
 		<div class="white-boxed" id="route-float" hidden="true">
@@ -277,13 +303,10 @@
 		<form action="#" onsubmit="return addRoute(this);" id="mapform" hidden="true">
 			<input type="text" name="internalip" placeholder="Internal IP" />
 			<input type="text" name="internalport" placeholder="Internal Port" /> Select external port:
-			<select name="externalport" form="mapform">
-          		<option value="2222">2222</option>
-          		<option value="443">443</option>
-          		<option value="80">80</option>
+			<select name="externalport" form="mapform" id="port-select">
+
       		</select>
 			<button type="submit">Add</button>
-			<p>Powered by <a href="https://github.com/bahusvel/TunnelBeast">TunnelBeast</a></p>
 		</form>
 
 		<form action="#" onsubmit="return logoutForm(this);" hidden="true" id="logout-form">
