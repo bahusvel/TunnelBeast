@@ -1,4 +1,4 @@
-listendev: enp0s31f6
+listendev: enp0s3
 authmethod: ldap
 ports: [2222, 80, 443]
 authprovider:

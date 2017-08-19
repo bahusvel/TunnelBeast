@@ -1,0 +1,6 @@
+listendev: enp0s3
+authmethod: test
+ports: [2222, 80, 443]
+authprovider:
+    Username: denis
+    Password: denis

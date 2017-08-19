@@ -1,6 +1,7 @@
 package iptables
 
 import (
+	"errors"
 	"log"
 	"os/exec"
 )
@@ -18,19 +19,19 @@ func Init(Interface string) error {
 	INTERFACE = Interface
 	err := exec.Command("sysctl", "-w", "net.ipv4.ip_forward=1").Run()
 	if err != nil {
-		return err
+		return errors.New("Sysctl " + err.Error())
 	}
 	err = exec.Command("iptables", "-t", "nat", "--flush").Run()
 	if err != nil {
-		return err
+		return errors.New("Flush " + err.Error())
 	}
 	err = exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-o", INTERFACE, "-j", "MASQUERADE").Run()
 	if err != nil {
-		return err
+		return errors.New("Masquerade " + err.Error())
 	}
 	err = exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-i", INTERFACE, "-p", "tcp", "--destination-port", "666", "-j", "ACCEPT").Run()
 	if err != nil {
-		return err
+		return errors.New("Port 666 " + err.Error())
 	}
 	return nil
 }

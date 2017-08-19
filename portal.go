@@ -149,11 +149,15 @@ func ListRoutes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries := connectionTable[username]
-	keys := make([]iptables.NATEntry, len(entries))
-	for k := range entries {
-		keys = append(keys, k)
-	}
+	/*
+
+		entries := connectionTable[username]
+		keys := make([]iptables.NATEntry, len(entries))
+		for k := range entries {
+			keys = append(keys, k)
+		}
+	*/
+	keys := []iptables.NATEntry{{SourceIP: "192.168.1.1", DestinationIP: "192.168.1.2", ExternalPort: "80", InternalPort: "8080"}}
 
 	data, err := json.Marshal(keys)
 	if err != nil {

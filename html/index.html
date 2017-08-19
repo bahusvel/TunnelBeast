@@ -1,186 +1,276 @@
 <html>
 
 <head>
-    <style>
-        @import url(https://fonts.googleapis.com/css?family=Roboto:300);
+	<style>
+		@import url(https://fonts.googleapis.com/css?family=Roboto:300);
 
-        .login-page {
-            width: 360px;
-            padding: 8% 0 0;
-            margin: auto;
-        }
+		.login-page {
+			width: 360px;
+			padding: 8% 0 0;
+			margin: auto;
+		}
 
-        .white-boxed {
-            position: relative;
-            z-index: 1;
-            background: #FFFFFF;
-            max-width: 360px;
-            margin: 0 auto 100px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
-        }
+		.white-boxed {
+			position: relative;
+			z-index: 1;
+			background: #FFFFFF;
+			max-width: 360px;
+			margin: 0 auto 100px;
+			padding: 20px;
+			text-align: center;
+			box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+		}
 
-        form {
-            position: relative;
-            z-index: 1;
-            background: #FFFFFF;
-            max-width: 360px;
-            margin: 0 auto 100px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
-        }
+		.grey-field {
+			font-family: "Roboto", sans-serif;
+			outline: 0;
+			background: #f2f2f2;
+			width: 100%;
+			border: 0;
+			margin: 0 0 15px;
+			padding: 10px;
+			box-sizing: border-box;
+			font-size: 14px;
+		}
 
-        input {
-            font-family: "Roboto", sans-serif;
-            outline: 0;
-            background: #f2f2f2;
-            width: 100%;
-            border: 0;
-            margin: 0 0 15px;
-            padding: 15px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
+		form {
+			position: relative;
+			z-index: 1;
+			background: #FFFFFF;
+			max-width: 360px;
+			margin: 0 auto 100px;
+			padding: 20px;
+			text-align: center;
+			box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+		}
 
-        select {
-            font-family: "Roboto", sans-serif;
-            outline: 0;
-            background: #f2f2f2;
-            width: 100%;
-            border: 0;
-            margin: 0 0 15px;
-            padding: 15px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
+		input {
+			font-family: "Roboto", sans-serif;
+			outline: 0;
+			background: #f2f2f2;
+			width: 100%;
+			border: 0;
+			margin: 0 0 15px;
+			padding: 15px;
+			box-sizing: border-box;
+			font-size: 14px;
+		}
 
-        button {
-            font-family: "Roboto", sans-serif;
-            text-transform: uppercase;
-            outline: 0;
-            background: #4CAF50;
-            width: 100%;
-            border: 0;
-            padding: 15px;
-            color: #FFFFFF;
-            font-size: 14px;
-            -webkit-transition: all 0.3 ease;
-            transition: all 0.3 ease;
-            cursor: pointer;
-        }
+		select {
+			font-family: "Roboto", sans-serif;
+			outline: 0;
+			background: #f2f2f2;
+			width: 100%;
+			border: 0;
+			margin: 0 0 15px;
+			padding: 15px;
+			box-sizing: border-box;
+			font-size: 14px;
+		}
 
-        body {
-            background: #76b852;
-            /* fallback for old browsers */
-            background: -webkit-linear-gradient(right, #76b852, #8DC26F);
-            background: -moz-linear-gradient(right, #76b852, #8DC26F);
-            background: -o-linear-gradient(right, #76b852, #8DC26F);
-            background: linear-gradient(to left, #76b852, #8DC26F);
-            font-family: "Roboto", sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-    </style>
+		button {
+			font-family: "Roboto", sans-serif;
+			text-transform: uppercase;
+			outline: 0;
+			background: #4CAF50;
+			width: 100%;
+			border: 0;
+			padding: 15px;
+			color: #FFFFFF;
+			font-size: 14px;
+			-webkit-transition: all 0.3 ease;
+			transition: all 0.3 ease;
+			cursor: pointer;
+		}
+
+		.delete-button {
+			font-family: "Roboto", sans-serif;
+			text-transform: uppercase;
+			outline: 0;
+			background: #4CAF50;
+			width: 10%;
+			border: 0;
+			margin-left: 10px;
+			padding: 10px;
+			color: #FFFFFF;
+			font-size: 14px;
+			-webkit-transition: all 0.3 ease;
+			transition: all 0.3 ease;
+			cursor: pointer;
+			display: inline-block;
+		}
+
+		body {
+			background: #76b852;
+			/* fallback for old browsers */
+			background: -webkit-linear-gradient(right, #76b852, #8DC26F);
+			background: -moz-linear-gradient(right, #76b852, #8DC26F);
+			background: -o-linear-gradient(right, #76b852, #8DC26F);
+			background: linear-gradient(to left, #76b852, #8DC26F);
+			font-family: "Roboto", sans-serif;
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
+		}
+	</style>
 </head>
 
 <body>
-    <script type="text/javascript">
-        var LOGGED_IN = false;
+	<script type="text/javascript">
+		var USERNAME = "";
+		var PASSWORD = "";
 
-        var getJSON = function(url, callback) {
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', url, true);
-            xhr.responseType = 'json';
-            xhr.onload = function() {
-                var status = xhr.status;
-                if (status == 200) {
-                    callback(null, xhr.response);
-                } else {
-                    callback(status);
-                }
-            };
-            xhr.send();
-        };
+		var getJSON = function(url, callback) {
+			var xhr = new XMLHttpRequest();
+			xhr.open('GET', url, true);
+			xhr.responseType = 'json';
+			xhr.onload = function() {
+				var status = xhr.status;
+				if (status == 200) {
+					callback(null, xhr.response);
+				} else {
+					callback(status);
+				}
+			};
+			xhr.send();
+		};
 
-        function loginForm(form) {
-            var error = "";
-            var username = form.username.value;
-            var password = form.password.value;
-            if (username.length == 0) {
-                error += 'Username is required\n';
-            }
-            if (password.length == 0) {
-                error += 'Password is required\n';
-            }
-            if (error) {
-                alert(error);
-                return false;
-            }
+		function create(htmlStr) {
+			var frag = document.createDocumentFragment(),
+				temp = document.createElement('div');
+			temp.innerHTML = htmlStr;
+			while (temp.firstChild) {
+				frag.appendChild(temp.firstChild);
+			}
+			return frag;
+		}
 
-            var http = new XMLHttpRequest();
-            var url = "/auth";
-            var params = `username=${username}&password=${password}`;
-            http.open("POST", url, true);
+		function showRoute(route) {
+			var html =
+				`<div class="grey-field">
+									<p style="display:inline">
+									${route.SourceIP} -> ${route.ExternalPort}:${route.DestinationIP}:${route.InternalPort}
+									</p>
+									<div class="delete-button">
+									-
+									</div>
+						</div>`
 
-            //Send the proper header information along with the request
-            http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			var fragment = create(html);
+			document.getElementById("routes").appendChild(fragment);
+		}
 
-            http.onreadystatechange = function() { //Call a function when the state changes.
-                if (http.readyState == 4 && http.status == 200) {
-                    if (http.responseText == "OK") {
-                        LOGGED_IN = true;
-                        document.getElementById("routes").removeAttribute("hidden");
-                        document.getElementById("mapform").removeAttribute("hidden");
-                        console.log("Auth success");
-                    } else if (http.responseText == "ERROR AUTH") {
-                        console.log("Auth failed");
-                    }
-                }
-            }
-            http.send(params);
+		function logoutForm(form) {
+			USERNAME = "";
+			PASSWORD = "";
+			document.getElementById("route-float").setAttribute("hidden", "true");
+			document.getElementById("mapform").setAttribute("hidden", "true");
+			document.getElementById("login-form").removeAttribute("hidden");
+			document.getElementById("logout-form").removeAttribute("hidden", "true");
+		}
 
-            return false;
-        }
-    </script>
+		function fetchRoutes() {
+			var params = `username=${USERNAME}&password=${PASSWORD}`;
 
-    <div class="login-page">
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', "/list", false);
 
-        <form action="#" onsubmit="return loginForm(this);">
-            <input type="text" name="username" placeholder="Username" />
-            <input type="password" name="password" placeholder="Password" />
-            <button type="submit">login</button>
-        </form>
 
-        <div class="white-boxed" id="routes" hidden="true">
-            Current Routes:
-            <br/>
-            <script>
-                if (LOGGED_IN) {
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('POST', url, false);
-                    xhr.responseType = 'json';
-                    xhr.send();
-                }
-            </script>
-        </div>
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send(params);
+			console.log(xhr.responseText);
+			var routes = JSON.parse(xhr.responseText);
 
-        <form class="add-form" action="/add" method="post" id="mapform" hidden="true">
-            <input type="hidden" name="username" placeholder="Username" />
-            <input type="hidden" name="password" placeholder="Password" />
-            <input type="text" name="internalip" placeholder="Internal IP" />
-            <input type="text" name="internalport" placeholder="Internal Port" /> Select external port:
-            <select name="externalport" form="mapform">
-          <option value="2222">2222</option>
-          <option value="443">443</option>
-          <option value="80">80</option>
-      </select>
-            <button type="submit">Add</button>
-            <p>Powered by <a href="https://github.com/bahusvel/TunnelBeast">TunnelBeast</a></p>
-        </form>
-    </div>
-    </div>
+			var node = document.getElementById("routes")
+			while (node.hasChildNodes()) {
+				node.removeChild(node.lastChild);
+			}
+
+			for (var i = 0; i < routes.length; i++) {
+				showRoute(routes[i]);
+			}
+		}
+
+		function loginForm(form) {
+			var error = "";
+			var username = form.username.value;
+			var password = form.password.value;
+			if (username.length == 0) {
+				error += 'Username is required\n';
+			}
+			if (password.length == 0) {
+				error += 'Password is required\n';
+			}
+			if (error) {
+				alert(error);
+				return false;
+			}
+
+			var http = new XMLHttpRequest();
+			var url = "/auth";
+			var params = `username=${username}&password=${password}`;
+			http.open("POST", url, true);
+
+			//Send the proper header information along with the request
+			http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+			http.onreadystatechange = function() { //Call a function when the state changes.
+				if (http.readyState == 4 && http.status == 200) {
+					if (http.responseText == "OK") {
+						USERNAME = username;
+						PASSWORD = password;
+						document.getElementById("login-form").setAttribute("hidden", "true");
+						document.getElementById("route-float").removeAttribute("hidden");
+						document.getElementById("logout-form").removeAttribute("hidden");
+						document.getElementById("mapform").removeAttribute("hidden");
+						console.log("Auth success");
+						fetchRoutes();
+					} else if (http.responseText == "ERROR AUTH") {
+						console.log("Auth failed");
+					}
+				}
+			}
+			http.send(params);
+
+			return false;
+		}
+	</script>
+
+	<div class="login-page">
+
+		<form action="#" onsubmit="return loginForm(this);" id="login-form">
+			<input type="text" name="username" placeholder="Username" />
+			<input type="password" name="password" placeholder="Password" />
+			<button type="submit">login</button>
+		</form>
+
+		<div class="white-boxed" id="route-float" hidden="true">
+			Current Routes:
+			<br/>
+			<div id="routes">
+			</div>
+		</div>
+
+
+		<form class="add-form" action="/add" method="post" id="mapform" hidden="true">
+			<input type="hidden" name="username" placeholder="Username" />
+			<input type="hidden" name="password" placeholder="Password" />
+			<input type="text" name="internalip" placeholder="Internal IP" />
+			<input type="text" name="internalport" placeholder="Internal Port" /> Select external port:
+			<select name="externalport" form="mapform">
+          		<option value="2222">2222</option>
+          		<option value="443">443</option>
+          		<option value="80">80</option>
+      		</select>
+			<button type="submit">Add</button>
+			<p>Powered by <a href="https://github.com/bahusvel/TunnelBeast">TunnelBeast</a></p>
+		</form>
+
+		<form action="#" onsubmit="return logoutForm(this);" hidden="true" id="logout-form">
+			<button type="submit">LOGOUT</button>
+		</form>
+
+	</div>
+	</div>
 </body>
 
 </html>

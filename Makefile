@@ -1,6 +1,9 @@
 TB_BIN = $(shell which TunnelBeast)
 DEPLOY_NODE = 192.168.1.91
 
+deps:
+	go get -u github.com/jteeuwen/go-bindata/...
+
 assets:
 	go-bindata html
 
@@ -14,4 +17,4 @@ deploy: build
 	ssh root@$(DEPLOY_NODE) "TunnelBeast config.yml"
 
 run: build
-	sudo TunnelBeast config.yml
+	sudo TunnelBeast test.yml
