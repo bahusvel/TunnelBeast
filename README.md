@@ -21,13 +21,13 @@ TunnelBeast exposes an authentication portal (and HTTP API) to the world, throug
 
 ## Run from Command Line
 TunnelBeast supports both WebUI and command line
-1. List current mapping
+1. List current mapping:
 curl --data "username=$YourUserName&password=$YourPassword" http://$TunnelBeastIP:666/list
-2. List available external ports
+2. List available external ports:
 curl --data "username=$YourUserName&password=$YourPassword" http://$TunnelBeastIP:666/ports
-3. Add a new mapping
+3. Add a new mapping:
 curl --data "username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP&externalport=$YourExternalPort&internalport=$YourInternalPort" http://$TunnelBeastIP:666/add
-4. Delete one existing mapping
+4. Delete one existing mapping:
 curl --data "username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP&externalport=$YourExternalPort&internalport=$YourInternalPort&sourceip=$YourSourceIP" http://$TunnelBeastIP:666/delete
 
 # Internals
