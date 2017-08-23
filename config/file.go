@@ -14,12 +14,14 @@ import (
 
 type Configuration struct {
 	ListenDev    string
+	Ports        []string
 	AuthProvider auth.AuthProvider
 }
 
 type configuration struct {
 	ListenDev    string
 	AuthMethod   string
+	Ports        []string
 	AuthProvider map[string]interface{}
 }
 
@@ -66,6 +68,7 @@ func LoadConfig(filePath string, conf *Configuration) {
 		log.Fatal("Failed reading config file", err)
 	}
 	conf.ListenDev = tmpConfig.ListenDev
+	conf.Ports = tmpConfig.Ports
 	switch tmpConfig.AuthMethod {
 	case "ldap":
 		tmpProvider := auth.LDAPAuth{}

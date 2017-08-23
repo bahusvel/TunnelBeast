@@ -1,5 +1,6 @@
-listendev: eth0
+listendev: enp0s3
 authmethod: ldap
+ports: [2222, 80, 443]
 authprovider:
     LDAPAddr: "192.168.1.90:389"
     DCString: "dc=unitecloud,dc=net"

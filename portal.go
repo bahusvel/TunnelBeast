@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -11,204 +13,235 @@ import (
 	"github.com/bahusvel/TunnelBeast/iptables"
 )
 
-const PORTAL_TEMPLATE = `
-<html>
-<head>
-<style>
-@import url(https://fonts.googleapis.com/css?family=Roboto:300);
+type EntrySet map[iptables.NATEntry]interface{}
 
-.login-page {
-  width: 360px;
-  padding: 8% 0 0;
-  margin: auto;
-}
-form {
-  position: relative;
-  z-index: 1;
-  background: #FFFFFF;
-  max-width: 360px;
-  margin: 0 auto 100px;
-  padding: 20px;
-  text-align: center;
-  box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
-}
-input {
-  font-family: "Roboto", sans-serif;
-  outline: 0;
-  background: #f2f2f2;
-  width: 100%;
-  border: 0;
-  margin: 0 0 15px;
-  padding: 15px;
-  box-sizing: border-box;
-  font-size: 14px;
-}
-button {
-  font-family: "Roboto", sans-serif;
-  text-transform: uppercase;
-  outline: 0;
-  background: #4CAF50;
-  width: 100%;
-  border: 0;
-  padding: 15px;
-  color: #FFFFFF;
-  font-size: 14px;
-  -webkit-transition: all 0.3 ease;
-  transition: all 0.3 ease;
-  cursor: pointer;
-}
-body {
-  background: #76b852; /* fallback for old browsers */
-  background: -webkit-linear-gradient(right, #76b852, #8DC26F);
-  background: -moz-linear-gradient(right, #76b852, #8DC26F);
-  background: -o-linear-gradient(right, #76b852, #8DC26F);
-  background: linear-gradient(to left, #76b852, #8DC26F);
-  font-family: "Roboto", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-</style>
-</head>
-<body>
-<div class="login-page" >
-    <form class="login-form" action="/auth" method="get">
-      <input type="text" name="username" placeholder="username"/>
-      <input type="password" name="password" placeholder="password"/>
-	  <input type="text" name="internalip" placeholder="internalip"/>
-      <button type="submit">login</button>
-	  <p>Powered by <a href="https://github.com/bahusvel/TunnelBeast">TunnelBeast</a></p>
-    </form>
-  </div>
-</div>
-</body>
-</html>
-`
+var (
+	authProvider    auth.AuthProvider
+	connectionTable = map[string]EntrySet{}
+	portTable       = map[string]map[string]interface{}{}
+	PORTAL          *template.Template
+	LOGOUT          *template.Template
+	conf            config.Configuration
+)
 
-const LOGOUT_TEMPLATE = `
-<html>
-<head>
-<style>
-@import url(https://fonts.googleapis.com/css?family=Roboto:300);
-
-.login-page {
-  width: 360px;
-  padding: 8% 0 0;
-  margin: auto;
-}
-form {
-  position: relative;
-  z-index: 1;
-  background: #FFFFFF;
-  max-width: 360px;
-  margin: 0 auto 100px;
-  padding: 20px;
-  text-align: center;
-  box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
-}
-button {
-  font-family: "Roboto", sans-serif;
-  text-transform: uppercase;
-  outline: 0;
-  background: #4CAF50;
-  width: 100%;
-  border: 0;
-  padding: 15px;
-  color: #FFFFFF;
-  font-size: 14px;
-  -webkit-transition: all 0.3 ease;
-  transition: all 0.3 ease;
-  cursor: pointer;
-}
-body {
-  background: #76b852; /* fallback for old browsers */
-  background: -webkit-linear-gradient(right, #76b852, #8DC26F);
-  background: -moz-linear-gradient(right, #76b852, #8DC26F);
-  background: -o-linear-gradient(right, #76b852, #8DC26F);
-  background: linear-gradient(to left, #76b852, #8DC26F);
-  font-family: "Roboto", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-</style>
-</head>
-<body>
-<div class="login-page" >
-    <form class="login-form" action="/logout" method="get">
-	  <p>You are already logged in</p>
-      <button type="submit">logout</button>
-	  <p>Powered by <a href="https://github.com/bahusvel/TunnelBeast">TunnelBeast</a></p>
-    </form>
-  </div>
-</div>
-</body>
-</html>
-`
-
-var connectionTable = map[string]string{}
-var authProvider auth.AuthProvider
-
-func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
+func AddRoute(w http.ResponseWriter, r *http.Request) {
 	log.Println("Api access", r.RemoteAddr)
 	w.Header().Set("Cache-Control", "no-cache")
-	username := r.URL.Query().Get("username")
-	password := r.URL.Query().Get("password")
-	internalip := r.URL.Query().Get("internalip")
-	if username == "" || password == "" || internalip == "" {
+
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	sourceip := r.PostForm.Get("sourceip")
+	internalip := r.PostForm.Get("internalip")
+	internalport := r.PostForm.Get("internalport")
+	externalport := r.PostForm.Get("externalport")
+
+	log.Println(username, password, internalip, internalport, externalport)
+	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" {
 		w.Write([]byte("ERROR"))
 		return
 	}
-	clientIP := strings.Split(r.RemoteAddr, ":")[0]
-	if _, exists := connectionTable[clientIP]; exists {
-		w.Write([]byte("LOGGEDIN"))
+
+	if sourceip == "" {
+		sourceip = strings.Split(r.RemoteAddr, ":")[0]
+	}
+
+	entry := iptables.NATEntry{SourceIP: sourceip, DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport}
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR"))
 		return
 	}
-	if authProvider.Authenticate(username, password, internalip) {
-		err := iptables.NewRoute(clientIP, internalip)
-		if err != nil {
-			w.Write([]byte(err.Error()))
+
+	if entries, ok := connectionTable[username]; ok {
+		if _, ok := entries[entry]; ok {
+			w.Write([]byte("ERROR EXISTS"))
 			return
 		}
-		connectionTable[clientIP] = internalip
-		http.Redirect(w, r, "/", 302)
-		w.Body.Close()
 	} else {
-		w.Write([]byte("ERROR"))
+		connectionTable[username] = EntrySet{}
 	}
+
+	availablePorts, ok := portTable[sourceip]
+
+	if !ok {
+		availablePorts = map[string]interface{}{}
+		for _, port := range conf.Ports {
+			availablePorts[port] = nil
+		}
+	}
+
+	if _, ok := availablePorts[entry.ExternalPort]; !ok {
+		w.Write([]byte("ERROR PORT OCCUPIED"))
+		return
+	}
+	delete(availablePorts, entry.ExternalPort)
+
+	err = iptables.NewRoute(entry)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	portTable[sourceip] = availablePorts
+	connectionTable[username][entry] = nil
+	//w.Body.Close()
+
 }
 
-func SignoutHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Logout request", r.RemoteAddr)
+func DeleteRoute(w http.ResponseWriter, r *http.Request) {
+	log.Println("Delete request", r.RemoteAddr)
 	w.Header().Set("Cache-Control", "no-cache")
-	clientIP := strings.Split(r.RemoteAddr, ":")[0]
-	if internalIP, exists := connectionTable[clientIP]; exists {
-		delete(connectionTable, clientIP)
-		err := iptables.DeleteRoute(clientIP, internalIP)
-		if err != nil {
-			w.Write([]byte(err.Error()))
-			return
-		}
-		http.Redirect(w, r, "/", 302)
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	sourceip := r.PostForm.Get("sourceip")
+	internalip := r.PostForm.Get("internalip")
+	internalport := r.PostForm.Get("internalport")
+	externalport := r.PostForm.Get("externalport")
+
+	entry := iptables.NATEntry{SourceIP: sourceip, DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport}
+
+	log.Println(entry)
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
 		return
 	}
-	w.Write([]byte("Not Logged In"))
+
+	entries, ok := connectionTable[username]
+	if !ok {
+		w.Write([]byte("ERROR NOT EXIST"))
+		return
+	}
+
+	if _, ok = entries[entry]; !ok {
+		w.Write([]byte("ERROR NOT EXIST"))
+		return
+	}
+
+	err = iptables.DeleteRoute(entry)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	portTable[sourceip][entry.ExternalPort] = nil
+	delete(connectionTable[username], entry)
+	w.Write([]byte("OK"))
 }
 
 func PortalEntryHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Portal access", r.RemoteAddr)
 	w.Header().Set("Cache-Control", "no-cache")
-	clientIP := strings.Split(r.RemoteAddr, ":")[0]
-	if _, exists := connectionTable[clientIP]; exists {
-		w.Write([]byte(LOGOUT_TEMPLATE))
-	} else {
-		w.Write([]byte(PORTAL_TEMPLATE))
+
+	if r.URL.Path == "/" {
+		asset, _ := Asset("html/index.html")
+		w.Write(asset)
+		return
 	}
+
+	asset, err := Asset("html" + r.URL.Path)
+	if err != nil {
+		w.Write([]byte("404"))
+		return
+	}
+	w.Write(asset)
+}
+
+func ListRoutes(w http.ResponseWriter, r *http.Request) {
+	log.Println("List access", r.RemoteAddr)
+	w.Header().Set("Cache-Control", "no-cache")
+
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	entries := connectionTable[username]
+	log.Println(len(entries))
+	keys := make([]iptables.NATEntry, len(entries))
+	i := 0
+	for k := range entries {
+		keys[i] = k
+		i++
+	}
+
+	//keys := []iptables.NATEntry{{SourceIP: "192.168.1.1", DestinationIP: "192.168.1.2", ExternalPort: "80", InternalPort: "8080"}}
+
+	data, err := json.Marshal(keys)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Write(data)
+}
+
+func ListPorts(w http.ResponseWriter, r *http.Request) {
+	log.Println("Port access", r.RemoteAddr)
+	w.Header().Set("Cache-Control", "no-cache")
+
+	sourceip := strings.Split(r.RemoteAddr, ":")[0]
+
+	var keys []string
+	entries, ok := portTable[sourceip]
+	if !ok {
+		keys = conf.Ports
+	} else {
+		keys = make([]string, len(entries))
+		i := 0
+		for k := range entries {
+			keys[i] = k
+			i++
+		}
+	}
+
+	log.Println(keys)
+
+	data, err := json.Marshal(keys)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Write(data)
+}
+
+func Authenticate(w http.ResponseWriter, r *http.Request) {
+	log.Println("List access", r.RemoteAddr)
+	w.Header().Set("Cache-Control", "no-cache")
+
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+	w.Write([]byte("OK"))
 }
 
 func main() {
 	if len(os.Args) != 2 {
 		log.Fatalln("Usage: TunnelBeast /path/to/config.yml")
 	}
-	conf := config.Configuration{}
+
 	config.LoadConfig(os.Args[1], &conf)
 	log.Printf("%+v\n", conf)
 
@@ -223,8 +256,11 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", PortalEntryHandler)
-	mux.HandleFunc("/auth", AuthenticationHandler)
-	mux.HandleFunc("/logout", SignoutHandler)
+	mux.HandleFunc("/delete", DeleteRoute)
+	mux.HandleFunc("/add", AddRoute)
+	mux.HandleFunc("/ports", ListPorts)
+	mux.HandleFunc("/auth", Authenticate)
+	mux.HandleFunc("/list", ListRoutes)
 
 	port80 := &http.Server{Addr: ":80", Handler: mux}
 	port666 := &http.Server{Addr: ":666", Handler: mux}
