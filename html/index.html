@@ -8,9 +8,16 @@
     <title>TunnelBeast</title>
     <!-- Bootstrap -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+
+
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+
+
+
+
+
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -43,7 +50,7 @@
             var params = `username=${USERNAME}&password=${PASSWORD}&sourceip=${route.SourceIP}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
 
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', "/delete", false);
+            xhr.open('POST', "http://tunnel.unitecloud.net:666/delete", false);
 
             xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
             xhr.send(params);
@@ -55,31 +62,21 @@
         }
 
         function showRoute(route, index) {
-            /***
-            var html =
-                `<div class="grey-field">
-									<p style="display:inline">
-									${route.SourceIP} -> ${route.ExternalPort}:${route.DestinationIP}:${route.InternalPort}
-									</p>
-									<div class="delete-button" onclick="deleteRoute(${index});">
-									-
-									</div>
-						</div>`
-             ***/
-            var html = `
-                      <tr>
-                      <th scope="row">${index}</th>
-                      <td>${route.SourceIP} -> ${route.ExternalPort}</td>
-                      <td>${route.DestinationIP}</td>
-                      <td>${route.InternalPort}</td>
-                      <td>
-                        <button type="button" class="btn btn-secondary delete-button" onclick="deleteRoute(${index});">Delete</button>
-                      </td>
-                    </tr>
-            `
+           
+            
 
-            var fragment = create(html);
-            document.getElementById("routes").appendChild(fragment);
+            var index = `${index}`;
+            var locad = `${route.SourceIP}`;
+            var locport = `${route.ExternalPort}`;
+            var trgad = `${route.DestinationIP}`;
+            var trgport =`${route.InternalPort}`;
+            
+            
+            var routeline = '<tr><th scope="row">'+index+'</th><td>'+locport+'</td><td>'+trgad+'</td><td>'+trgport+'</td><td><button type="button" class="btn btn-secondary delete-button" onclick="deleteRoute('+index+');">Delete</button></td></tr>';
+            $("#routes").append(routeline);
+
+          //  var fragment = create(html);
+          //  document.getElementById("routes").appendChild(fragment);
         }
 
         function addRoute(form) {
@@ -90,7 +87,7 @@
             var params = `username=${USERNAME}&password=${PASSWORD}&internalip=${internalip}&externalport=${externalport}&internalport=${internalport}`;
 
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', "/add", false);
+            xhr.open('POST', "http://tunnel.unitecloud.net:666/add", false);
 
             xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
             xhr.send(params);
@@ -112,7 +109,7 @@
             var params = `username=${USERNAME}&password=${PASSWORD}`;
 
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', "/list", false);
+            xhr.open('POST', "http://tunnel.unitecloud.net:666/list", false);
 
 
             xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -134,7 +131,7 @@
 
         function getPorts() {
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', "/ports", false);
+            xhr.open('GET', "http://tunnel.unitecloud.net:666/ports", false);
             xhr.send();
 
             console.log(xhr.responseText);
@@ -173,7 +170,7 @@
                 return false;
             }
             var http = new XMLHttpRequest();
-            var url = "/auth";
+            var url = "http://tunnel.unitecloud.net:666/auth";
             var params = `username=${username}&password=${password}`;
             http.open("POST", url, true);
             http.setRequestHeader("Content-type",
@@ -273,7 +270,7 @@
                     <h5>Please enter your target server info here</h5>
                     <form action="#" onsubmit="return addRoute(this);" id="mapform">
                         <div class="form-group">
-                            <label for="InputTargetIP">Target IP</label>
+                            <label for="InputTargetIP">Target IP Address</label>
                             <input type="text" class="form-control" id="InputTargetIP" name="internalip" aria-describedby="IPlHelp" placeholder="Enter IP like 192.168.1.1" data-container="body" data-toggle="popover" data-placement="top" data-content="Please enter the internal IP address of the server you want to link to.">
                         </div>
                         <div class="form-group">
@@ -301,7 +298,7 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Local Port</th>
-                                    <th>Target Address</th>
+                                    <th>Target IP Address</th>
                                     <th>Target Port</th>
                                     <th>Functions</th>
                                 </tr>
