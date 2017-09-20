@@ -8,15 +8,9 @@
     <title>TunnelBeast</title>
     <!-- Bootstrap -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
-
-
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
-
-
-
-
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -56,27 +50,25 @@
             xhr.send(params);
 
             console.log(xhr.responseText);
+            var routerlineidout = "#routeline-" + index;
+            $(routerlineidout).fadeOut("slow", function() {
+                refresh();
+                return false;
+            });
 
-            refresh();
-            return false;
         }
 
         function showRoute(route, index) {
-           
-            
-
             var index = `${index}`;
             var locad = `${route.SourceIP}`;
             var locport = `${route.ExternalPort}`;
             var trgad = `${route.DestinationIP}`;
-            var trgport =`${route.InternalPort}`;
-            
-            
-            var routeline = '<tr><th scope="row">'+index+'</th><td>'+locport+'</td><td>'+trgad+'</td><td>'+trgport+'</td><td><button type="button" class="btn btn-secondary delete-button" onclick="deleteRoute('+index+');">Delete</button></td></tr>';
-            $("#routes").append(routeline);
+            var trgport = `${route.InternalPort}`;
 
-          //  var fragment = create(html);
-          //  document.getElementById("routes").appendChild(fragment);
+            var routeline = '<tr id="routeline-' + index + '" style="display:none"><th scope="row">' + index + '</th><td>' + locport + '</td><td>' + trgad + '</td><td>' + trgport + '</td><td><div class="btn-group" role="group" ><button type="button" class="btn btn-secondary delete-button" onclick="deleteRoute(' + index + ');">Delete</button><button type="button" class="btn btn-info save-button" onclick="saveRoute(' + index + ');">Save</button></div></td></tr>';
+            $("#routes").append(routeline);
+            var routerlineidin = "#routeline-" + index;
+            $(routerlineidin).fadeIn("slow");
         }
 
         function addRoute(form) {
@@ -266,7 +258,7 @@
         <!-- app body -->
         <div id='app-body' class='container-fluid' hidden="true">
             <div class="row justify-content-center">
-                <div id='app-body-left' class='col-2 '>
+                <div id='app-body-left' class='col-3 '>
                     <h5>Please enter your target server info here</h5>
                     <form action="#" onsubmit="return addRoute(this);" id="mapform">
                         <div class="form-group">
@@ -289,24 +281,96 @@
                         <button type="submit" class="btn btn-primary">Add</button>
                     </form>
                 </div>
-                <div id='app-body-right' class='col-6'>
+                <div id='app-body-right' class='col-9'>
+                    <div class="card">
+                        <div class="card-header">
+                            <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="nav-croutes-tab" data-toggle="tab" href="#nav-croutes" role="tab" aria-controls="nav-croutes" aria-expanded="true">Current Routes</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link " id="nav-rrecored-tab" data-toggle="tab" href="#nav-rrecored" role="tab" aria-controls="nav-rrecored">Recoreds</a>
+                                </li>
+                            </ul>
 
-                    <div class="card card-body" id="IPList">
-                        <h4 class="card-title">Current Routes</h4>
-                        <table class="table table-hover" id="IPList">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Local Port</th>
-                                    <th>Target IP Address</th>
-                                    <th>Target Port</th>
-                                    <th>Functions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="routes">
+                        </div>
+                        <div class="card-body tab-content" id="IPList">
+                            <div class="tab-pane fade show active" id="nav-croutes" role="tabpanel" aria-labelledby="nav-croutes-tab">
+                                <table class="table table-hover" id="IPList">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Local Port</th>
+                                            <th>Target IP Address</th>
+                                            <th>Target Port</th>
+                                            <th>Functions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="routes">
 
-                            </tbody>
-                        </table>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade" id="nav-rrecored" role="tabpanel" aria-labelledby="nav-rrecored-tab">
+                                <table class="table table-hover" id="IPRecord">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Saved Name</th>
+                                            <th>Local Port</th>
+                                            <th>Target IP Address</th>
+                                            <th>Target Port</th>
+                                            <th>Functions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sroutes">
+
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </div>
+                        <div class="card-footer text-muted">
+                            <p><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#helpModal">Help</button></p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal -->
+        <div class="modal fade" id="helpModal" tabindex="-1" role="dialog" aria-labelledby="helpModal" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">How to Use</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+                    </div>
+                    <div class="modal-body">
+                        ...
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="saveRouteModal" tabindex="-1" role="dialog" aria-labelledby="saveRouteModal" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Save Route</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+                    </div>
+                    <div class="modal-body">
+                        ...
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
