@@ -22,13 +22,13 @@ TunnelBeast exposes an authentication portal (and HTTP API) to the world, throug
 ## Run from Command Line
 TunnelBeast supports both WebUI and command line
 1. List current mapping:
-curl --data "username=$YourUserName&password=$YourPassword" http://$TunnelBeastIP:666/list
+curl --data "username=$YourUserName&password=$YourPassword" https://$TunnelBeastIP/list
 2. List available external ports:
-curl --data "username=$YourUserName&password=$YourPassword" http://$TunnelBeastIP:666/ports
+curl --data "username=$YourUserName&password=$YourPassword" https://$TunnelBeastIP/ports
 3. Add a new mapping:
-curl --data "username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP&externalport=$YourExternalPort&internalport=$YourInternalPort" http://$TunnelBeastIP:666/add
+curl --data "username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP&externalport=$YourExternalPort&internalport=$YourInternalPort" https://$TunnelBeastIP/add
 4. Delete one existing mapping:
-curl --data "username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP&externalport=$YourExternalPort&internalport=$YourInternalPort&sourceip=$YourSourceIP" http://$TunnelBeastIP:666/delete
+curl --data "username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP&externalport=$YourExternalPort&internalport=$YourInternalPort&sourceip=$YourSourceIP" https://$TunnelBeastIP/delete
 
 # Internals
 TunnelBeast uses source IP to distinguish different clients hence if client A and client B have the same source IP (they are behind NAT/Gateway) they will see the same thing when trying to access TunnelBeast IP address. If you are worried about this you need to use TunnelBeast in multi IP mode. That way on successive logins clients will be given different public IPs to use.
