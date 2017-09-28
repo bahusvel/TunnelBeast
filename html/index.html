@@ -9,7 +9,6 @@
     <!-- Bootstrap -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
 
@@ -23,6 +22,7 @@
 
 <body>
     <script type="text/javascript">
+        var crtEoutes = new Array();
         var USERNAME = "";
         var PASSWORD = "";
         var ROUTES = [];
@@ -58,7 +58,7 @@
             });
 
         }
-
+        
         function showRoute(route, index) {
             var index = `${index}`;
             var locad = `${route.SourceIP}`;
@@ -93,31 +93,109 @@
             var selectRouteLine ="#" + ($(savebutton).parent().parent().parent().attr("id"));
             $("#saveTargetIP").val($(selectRouteLine).children().eq(2).html());
             $("#saveTPortSelect").val($(selectRouteLine).children().eq(3).html());
-            $("#saveLPortSelect").val($(selectRouteLine).children().eq(1).html());           
+            $("#saveLPortSelect").val($(selectRouteLine).children().eq(1).html());  
+            $("#datafrom").val(selectRouteLine);
             $('#saveRouteModal').modal();
         }
         
-        function saveRoute(form){            
+        
+        function addRouteFromSaved(lskey){
             
-            var savename = form.saveName.value;
-            var internalip = form.saveInternalip.value;
-            var externalport = form.saveInternalPort.value;
-            var internalport = form.saveLocalPort.value;
-            var nameRoute = { "routername":savename, "internalip":internalip, "externalport":externalport, "internalport":internalport };
-            var nameRouteJSON  = new Array()
-           // alert(JSON.parse($.cookie("savedRoutes")));
+            var lcsroute = localStorage.getItem(lskey);
+            var tflcsroute = JSON.parse(lcsroute);
             
-            alert($.cookie("savedRoutes"));
-            if ($.cookie('savedRoutes')){
-                   nameRouteJSON = $.cookie('savedRoutes');
-                   nameRouteJSON.push(JSON.stringify(nameRoute));
-                   $.cookie('savedRoutes',nameRouteJSON);
+            var internalip = tflcsroute[1];
+            var externalport = tflcsroute[3];
+            var internalport = tflcsroute[2];
+
+            var params = `username=${USERNAME}&password=${PASSWORD}&internalip=${internalip}&externalport=${externalport}&internalport=${internalport}`;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', "http://tunnel.unitecloud.net:666/add", false);
+
+            xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            xhr.send(params);
+
+            refresh();
+            return false;
+        }
+        
+        
+        function useSRouteModal(usebtn){
+            var selectSRouteLine ="#" + ($(usebtn).parent().parent().parent().attr("id"));
+            var getkey = selectSRouteLine.substring(13);
+            addRouteFromSaved(getkey);
+        }
+        
+        function configSRouteModal(configbtn){
+            var selectSRouteLine ="#" + ($(configbtn).parent().parent().parent().attr("id"));
+            var getkey = selectSRouteLine.substring(13);
+        }
+        
+        function deleteSRoute(deletebtn){
+            var selectSRouteLine ="#" + ($(deletebtn).parent().parent().parent().attr("id"));
+            var getkey = selectSRouteLine.substring(13);
+            var r = confirm("Are you sure to delete this saved route?");
+            if (r == true) {
+                localStorage.removeItem(getkey);
+                $(selectSRouteLine).remove();
+            } else {
+             
+            }
+        }
+        
+        function showNewSavedRoute(nsname,locport,trgad,trgport){
+            var nsRouteline = '<tr id="sdrouteline-' + nsname + '" ><th scope="row">' + nsname + '</th><td>' + locport + '</td><td>' + trgad + '</td><td>' + trgport + '</td><td><div class="btn-group" role="group" ><button type="button" class="btn btn-primary" onclick="useSRouteModal(this);">Use</button><button type="button" class="btn btn-info save-button" onclick="configSRouteModal(this);">Config</button><button type="button" class="btn btn-danger delete-button" onclick="deleteSRoute(this);">Delete</button></div></td></tr>';
+            $("#sroutes").append(nsRouteline);
+        }
+        
+        function showAllSavedRoutes(){
+          //  alert(localStorage.key(0));
+           // alert(localStorage.getItem(localStorage.key(0)));
+            
+            for(var i=0; i<localStorage.length;i++)
+            {
+              var lcsroute = localStorage.getItem(localStorage.key(i));
+              var tflcsroute = JSON.parse(lcsroute);
+              nsname = tflcsroute[0];
+              locport = tflcsroute[3];
+              trgad = tflcsroute[1];
+              trgport  = tflcsroute[2];
+              var nsRouteline = '<tr id="sdrouteline-' + nsname + '" ><th scope="row">' + nsname + '</th><td>' + locport + '</td><td>' + trgad + '</td><td>' + trgport + '</td><td><div class="btn-group" role="group" ><button type="button" class="btn btn-primary" onclick="useSRouteModal(this);">Use</button><button type="button" class="btn btn-info save-button" onclick="configSRouteModal(this);">Config</button><button type="button" class="btn btn-danger delete-button" onclick="deleteSRoute(this);">Delete</button></div></td></tr>';
+             $("#sroutes").append(nsRouteline);
+       
+            }
+        }
+        
+        function saveRoute(){           
+            var savename = $("#saveName").val();                        
+            if(savename){
+                var saveLSname = "savedRoutes_" + savename;
+                var internalip = $("#saveTargetIP").val();   
+                var externalport = $("#saveTPortSelect").val(); 
+                var internalport = $("#saveLPortSelect").val();  
+                var nameRoute = new Array(savename,internalip,externalport,internalport); 
+                var nameRouteJSON = JSON.stringify(nameRoute);
+                if(!window.localStorage){
+                    alert("The Browser doesn't support Localstorage");
+                    return false;
                 }else{
-                    nameRouteJSON.push(JSON.stringify(nameRoute));
-                    $.cookie('savedRoutes',nameRouteJSON);
+                    localStorage.setItem(savename,nameRouteJSON);
+                    showNewSavedRoute(savename,internalport,internalip,externalport);
+                    $('#saveRouteModal').modal('hide');   
+                    //clean the form val
+                    $("#saveName").val("");
+                    $("#saveTargetIP").val("");
+                    $("#saveTPortSelect").val("");
+                    $("#saveLPortSelect").val(""); 
+                    //remove the save button
+                    var savebtnfm = $("#datafrom").val();
+                    $("tr"+ savebtnfm + " .save-button").remove();
                 }
-                     // alert(JSON.parse($.cookie("basket-data")));
-            alert($.cookie("savedRoutes"));
+            }else{
+                alert('Please input the name');
+                return ;
+            }
         }
 
         function logoutForm(form) {
@@ -347,7 +425,6 @@
                                 <table class="table table-hover" id="IPRecord">
                                     <thead>
                                         <tr>
-                                            <th>#</th>
                                             <th>Saved Name</th>
                                             <th>Local Port</th>
                                             <th>Target IP Address</th>
@@ -362,6 +439,9 @@
                             </div>
 
                         </div>
+                        <script type="text/javascript">
+                            showAllSavedRoutes();
+                        </script>
                         <div class="card-footer text-muted">
                             <p><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#helpModal">Help</button></p>
                         </div>
@@ -405,10 +485,10 @@
                 </button>
                     </div>
                     <div class="modal-body">
-                        <form action="#" onsubmit="saveRoute(this);" id="saveNameForm">
+                        <div id="saveNameForm">
                             <div class="form-group">
                                 <label for="saveName">Name for this setting</label>
-                                <input type="text" class="form-control" id="saveName" name="saveName" aria-describedby="NamelHelp" required>
+                                <input type="text" class="form-control" id="saveName" name="saveName" aria-describedby="NamelHelp" >
                             </div>
                             <div class="form-group">
                                 <label for="InputTargetIP">Target IP Address</label>
@@ -422,9 +502,13 @@
                                 <label for="LocalPortSelect">Local Port Select</label>
                                 <input class="form-control" id="saveLPortSelect" aria-describedby="PortlHelp" name="saveLocalPort" disabled>
                             </div>
+                            <div class="form-group" style="display:none">
+                                <label for="datafrom">Local Port Select</label>
+                                <input class="form-control" id="datafrom" disabled>
+                            </div>
 
-                            <button onclick="saveRoute(this);" class="btn btn-primary">Save</button>
-                        </form>
+                            <button onclick="saveRoute();" class="btn btn-primary">Save</button>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
