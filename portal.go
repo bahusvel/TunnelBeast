@@ -262,7 +262,7 @@ func main() {
 	
 	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist("tunnel2.unitecloud.net"),
+		HostPolicy: autocert.HostWhitelist(conf.Domainname),
 		Cache:      autocert.DirCache("certs"), 
 	}
 
