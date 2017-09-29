@@ -15,6 +15,7 @@ import (
 type Configuration struct {
 	ListenDev    string
 	Ports        []string
+    Domainname   string
 	AuthProvider auth.AuthProvider
 }
 
@@ -22,6 +23,7 @@ type configuration struct {
 	ListenDev    string
 	AuthMethod   string
 	Ports        []string
+    Domainname   string
 	AuthProvider map[string]interface{}
 }
 
@@ -69,6 +71,7 @@ func LoadConfig(filePath string, conf *Configuration) {
 	}
 	conf.ListenDev = tmpConfig.ListenDev
 	conf.Ports = tmpConfig.Ports
+    conf.Domainname = tmpConfig.Domainname
 	switch tmpConfig.AuthMethod {
 	case "ldap":
 		tmpProvider := auth.LDAPAuth{}

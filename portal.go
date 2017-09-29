@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"html/template"
 	"log"
+	"golang.org/x/crypto/acme/autocert"
+	"crypto/tls"
 	"net/http"
 	"os"
 	"strings"
@@ -237,6 +239,10 @@ func Authenticate(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+func redirectTLS(w http.ResponseWriter, r *http.Request) {
+        http.Redirect(w, r, "https://" + r.Host + r.RequestURI, http.StatusMovedPermanently)
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		log.Fatalln("Usage: TunnelBeast /path/to/config.yml")
@@ -253,6 +259,12 @@ func main() {
 		log.Println("Error initializing iptables", err)
 		return
 	}
+	
+	certManager := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(conf.Domainname),
+		Cache:      autocert.DirCache("certs"), 
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", PortalEntryHandler)
@@ -262,15 +274,17 @@ func main() {
 	mux.HandleFunc("/auth", Authenticate)
 	mux.HandleFunc("/list", ListRoutes)
 
-	port80 := &http.Server{Addr: ":80", Handler: mux}
-	port666 := &http.Server{Addr: ":666", Handler: mux}
-	go func() {
+	port80 := &http.Server{Addr: ":80", Handler: http.HandlerFunc(redirectTLS)}
+	port443 := &http.Server{Addr: ":443", Handler: mux, TLSConfig: &tls.Config{GetCertificate: certManager.GetCertificate,},}
+
+    go func() {
 		errInternal := port80.ListenAndServe()
 		if errInternal != nil {
 			log.Println(errInternal)
 		}
 	}()
-	err = port666.ListenAndServe()
+    
+    err = port443.ListenAndServeTLS("","") //key and cert are comming from Let's Encrypt
 	if err != nil {
 		log.Println(err)
 	}
