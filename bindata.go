@@ -83,7 +83,7 @@ func htmlIndexHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "html/index.html", size: 8017, mode: os.FileMode(420), modTime: time.Unix(1503114123, 0)}
+	info := bindataFileInfo{name: "html/index.html", size: 8017, mode: os.FileMode(420), modTime: time.Unix(1503288108, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
