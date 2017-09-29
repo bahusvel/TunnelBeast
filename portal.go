@@ -28,7 +28,6 @@ var (
 
 func AddRoute(w http.ResponseWriter, r *http.Request) {
 	log.Println("Api access", r.RemoteAddr)
-	w.Header().Set("Cache-Control", "no-cache")
 
 	err := r.ParseForm()
 	if err != nil {
@@ -96,7 +95,7 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 
 func DeleteRoute(w http.ResponseWriter, r *http.Request) {
 	log.Println("Delete request", r.RemoteAddr)
-	w.Header().Set("Cache-Control", "no-cache")
+	
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
@@ -141,7 +140,6 @@ func DeleteRoute(w http.ResponseWriter, r *http.Request) {
 
 func PortalEntryHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Portal access", r.RemoteAddr)
-	w.Header().Set("Cache-Control", "no-cache")
 
 	if r.URL.Path == "/" {
 		asset, _ := Asset("html/index.html")
@@ -222,8 +220,7 @@ func ListPorts(w http.ResponseWriter, r *http.Request) {
 
 func Authenticate(w http.ResponseWriter, r *http.Request) {
 	log.Println("List access", r.RemoteAddr)
-	w.Header().Set("Cache-Control", "no-cache")
-
+	
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
