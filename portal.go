@@ -58,6 +58,11 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+    if !authProvider.CheckDestinationIP(internalip, username) {
+        w.Write([]byte("ACL ERROR"))
+        return
+    }
+
 	if entries, ok := connectionTable[username]; ok {
 		if _, ok := entries[entry]; ok {
 			w.Write([]byte("ERROR EXISTS"))
@@ -270,7 +275,7 @@ func main() {
 	mux.HandleFunc("/", PortalEntryHandler)
 	mux.HandleFunc("/delete", DeleteRoute)
 	mux.HandleFunc("/add", AddRoute)
-	mux.HandleFunc("/ports", ListPorts)
+    mux.HandleFunc("/ports", ListPorts)
 	mux.HandleFunc("/auth", Authenticate)
 	mux.HandleFunc("/list", ListRoutes)
 

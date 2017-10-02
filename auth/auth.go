@@ -2,7 +2,8 @@ package auth
 
 type AuthProvider interface {
 	Init()
-	Authenticate(Username string, Password string) bool
+	CheckDestinationIP(dstip string, Username string) bool
+    Authenticate(Username string, Password string) bool
 }
 
 type TestAuth struct {
@@ -13,9 +14,15 @@ type TestAuth struct {
 func (this TestAuth) Init() {
 
 }
+
 func (this TestAuth) Authenticate(Username string, Password string) bool {
 	if Username == this.Username && Password == this.Password {
 		return true
 	}
 	return false
 }
+
+func (this TestAuth) CheckDestinationIP(dstip string, Username string) bool {
+    return true
+}
+

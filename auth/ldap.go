@@ -3,8 +3,8 @@ package auth
 import (
 	"fmt"
 	"log"
-
-	"gopkg.in/ldap.v2"
+    "net"
+    "gopkg.in/ldap.v2"
 )
 
 type LDAPAuth struct {
@@ -38,8 +38,13 @@ func (this LDAPAuth) queryIPAddress(LdapClient *ldap.Conn, Username string) ([]s
 }
 
 func ipAllowed(ip string, whitelist []string) bool {
-	for _, testIp := range whitelist {
-		if ip == testIp || testIp == "*" {
+	ipAddr := net.ParseIP(ip)
+    for _, testIp := range whitelist {
+		_, ipv4Net, err := net.ParseCIDR(testIp)
+        if err != nil {
+            log.Println(err)
+        }
+        if ipv4Net.Contains(ipAddr) {
 			return true
 		}
 	}
@@ -50,18 +55,17 @@ func (this LDAPAuth) CheckSourceIP(srcip string) bool {
 	return true
 }
 
-func (this LDAPAuth) CheckDestinationIP(dstip string) bool {
-	/*
-		if this.IPAddressAttribute == "" {
-			return true
-		}
-		ipList, err := this.queryIPAddress(l, dstip)
-		if err != nil {
-			log.Println(err)
-			return false
-		}
-		return ipAllowed(dstip, ipList)
-	*/
+func (this LDAPAuth) CheckDestinationIP(dstip string, Username string) bool {
+	if this.IPAddressAttribute == "" {
+		return true
+	}
+    l, err := ldap.Dial("tcp", this.LDAPAddr)
+	ipList, err := this.queryIPAddress(l, Username)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return ipAllowed(dstip, ipList)
 	return true
 }
 
