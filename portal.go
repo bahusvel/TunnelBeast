@@ -57,10 +57,10 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    if !authProvider.CheckDestinationIP(internalip, username) {
-        w.Write([]byte("ACL ERROR"))
-        return
-    }
+	if !authProvider.CheckDestinationIP(internalip, username) {
+		w.Write([]byte("ERROR ACCESS DENIED"))
+		return
+	}
 
 	if entries, ok := connectionTable[username]; ok {
 		if _, ok := entries[entry]; ok {
@@ -100,7 +100,7 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 
 func DeleteRoute(w http.ResponseWriter, r *http.Request) {
 	log.Println("Delete request", r.RemoteAddr)
-	
+
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
@@ -225,7 +225,7 @@ func ListPorts(w http.ResponseWriter, r *http.Request) {
 
 func Authenticate(w http.ResponseWriter, r *http.Request) {
 	log.Println("List access", r.RemoteAddr)
-	
+
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
@@ -272,7 +272,7 @@ func main() {
 	mux.HandleFunc("/", PortalEntryHandler)
 	mux.HandleFunc("/delete", DeleteRoute)
 	mux.HandleFunc("/add", AddRoute)
-    mux.HandleFunc("/ports", ListPorts)
+	mux.HandleFunc("/ports", ListPorts)
 	mux.HandleFunc("/auth", Authenticate)
 	mux.HandleFunc("/list", ListRoutes)
 
