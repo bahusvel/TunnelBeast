@@ -1,7 +1,18 @@
 listendev: enp0s3
 authmethod: ldap
+
+# Encrypt method: none, manual, letsEncrypt
+#   none:         use http 
+#   manual:       use your own TLS certificate file 
+#   letsEncrypt:  use Let's Encrypt for https 
+https: letsEncrypt 
+
+# if 'manual' encrypt is used, 'path' must be used to indicate /path/to/certificate/file
+# give full path to .crt file in the 'path', .key should present in the same directory with the same file name
+#path: ~/github.com/bahusvel/TunnelBeast/cert/server.crt
+
 ports: [2222, 80, 443]
-domainname: tunnel2.unitecloud.net
+domainname: tunnel.unitecloud.net
 authprovider:
     LDAPAddr: "192.168.1.90:389"
     DCString: "dc=unitecloud,dc=net"
