@@ -13,7 +13,7 @@ build: assets
 deploy: build
 	ssh root@$(DEPLOY_NODE) "killall TunnelBeast" || true
 	scp $(TB_BIN) root@$(DEPLOY_NODE):/usr/local/bin/
-	scp config.yml root@$(DEPLOY_NODE):./
+	#scp config.yml root@$(DEPLOY_NODE):./
 	ssh root@$(DEPLOY_NODE) "TunnelBeast config.yml"
 
 run: build
