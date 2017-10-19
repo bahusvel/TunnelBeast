@@ -13,6 +13,8 @@ import (
 )
 
 type Configuration struct {
+	Https        string
+	Path         string
 	ListenDev    string
 	Ports        []string
 	Domainname   string
@@ -20,6 +22,8 @@ type Configuration struct {
 }
 
 type configuration struct {
+	Https        string
+	Path         string
 	ListenDev    string
 	AuthMethod   string
 	Ports        []string
@@ -70,6 +74,8 @@ func LoadConfig(filePath string, conf *Configuration) {
 		log.Fatal("Failed reading config file", err)
 	}
 	conf.ListenDev = tmpConfig.ListenDev
+	conf.Https = tmpConfig.Https
+	conf.Path = tmpConfig.Path
 	conf.Ports = tmpConfig.Ports
 	conf.Domainname = tmpConfig.Domainname
 	switch tmpConfig.AuthMethod {
