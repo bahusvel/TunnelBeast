@@ -33,6 +33,14 @@
 			font-size: 12px;
 		}
 
+		.errorMessage {
+			font-family: "Roboto", sans-serif;
+			outline: 0;
+			width: 100%;
+			color: #AB0000;
+			font-size: 14px;
+		}
+
 		form {
 			position: relative;
 			z-index: 1;
@@ -119,6 +127,14 @@
 		var USERNAME = "";
 		var PASSWORD = "";
 		var ROUTES = [];
+		var map = {
+			"ERROR ACCESS DENIED" : "Access denied. Please contact your administrator. <br/><br/>",
+			"ERROR EXISTS" : "Routes exists. Please check your input data. <br/><br/>",
+			"ERROR PORT OCCUPIED" : "Port occupied. Please try another port. <br/><br/>",
+			"ERROR INPUT" : "Input error. Please check your input data. <br/><br/>",
+			"ERROR AUTH" : "Incorrect user ID or password. <br/><br/>",
+			"ERROR NOT EXIST" : "The route you try to delete is not exist.<br/><br/>"
+		};
 
 		function create(htmlStr) {
 			var frag = document.createDocumentFragment(),
@@ -138,9 +154,31 @@
 			var params = `username=${USERNAME}&password=${PASSWORD}&sourceip=${route.SourceIP}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
 
 			var xhr = new XMLHttpRequest();
-			xhr.open('POST', "/delete", false);
+			var delErrorElement = document.getElementById("deleteRouteError");
 
+			xhr.open('POST', "/delete", false);
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					document.getElementById("addRouteError").setAttribute("hidden", "true");
+
+					if (xhr.responseText == "OK") {
+						delErrorElement.setAttribute("hidden", "true");
+						return;
+					}
+
+					if (!(xhr.responseText in map)){
+						delErrorElement.removeAttribute("hidden");
+						delErrorElement.innerHTML = "Route delete failed. Please try again. <br/><br/>";
+						return;
+					}
+
+					delErrorElement.removeAttribute("hidden");
+					delErrorElement.innerHTML = map[xhr.responseText];
+				}
+			}
+
 			xhr.send(params);
 
 			console.log(xhr.responseText);
@@ -172,11 +210,32 @@
 			var params = `username=${USERNAME}&password=${PASSWORD}&internalip=${internalip}&externalport=${externalport}&internalport=${internalport}`;
 
 			var xhr = new XMLHttpRequest();
+			var addErrorElement = document.getElementById("addRouteError");
+
 			xhr.open('POST', "/add", false);
-
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-			xhr.send(params);
 
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					document.getElementById("deleteRouteError").setAttribute("hidden", "true");
+
+					if (xhr.responseText == "OK") {
+						addErrorElement.setAttribute("hidden", "true");
+						return;
+					}
+
+					if (!(xhr.responseText in map)){
+						addErrorElement.removeAttribute("hidden");
+						addErrorElement.innerHTML = "Route add failed. Please check the input data. <br/><br/>";
+						return;
+					}
+
+					addErrorElement.removeAttribute("hidden");
+					addErrorElement.innerHTML = map[xhr.responseText];
+				}
+			}
+
+			xhr.send(params);
 			refresh();
 			return false;
 		}
@@ -205,7 +264,7 @@
 
 			ROUTES = routes;
 
-			var node = document.getElementById("routes")
+			var node = document.getElementById("routes");
 			while (node.hasChildNodes()) {
 				node.removeChild(node.lastChild);
 			}
@@ -275,6 +334,8 @@
 						refresh();
 					} else if (http.responseText == "ERROR AUTH") {
 						console.log("Auth failed");
+						document.getElementById("authFail").removeAttribute("hidden");
+						document.getElementById("authFail").innerHTML = map[http.responseText];
 					}
 				}
 			}
@@ -286,6 +347,7 @@
 	<div class="login-page">
 
 		<form action="#" onsubmit="return loginForm(this);" id="login-form">
+			<label hidden="true" class="errorMessage" id="authFail" for></label>
 			<input type="text" name="username" placeholder="Username" />
 			<input type="password" name="password" placeholder="Password" />
 			<button type="submit">login</button>
@@ -297,10 +359,12 @@
 			<br/>
 			<div id="routes">
 			</div>
+			<label hidden="true" class="errorMessage" id="deleteRouteError" for></label>
 		</div>
 
 
 		<form action="#" onsubmit="return addRoute(this);" id="mapform" hidden="true">
+			<label hidden="true" class="errorMessage" id="addRouteError" for></label>
 			<input type="text" name="internalip" placeholder="Internal IP" />
 			<input type="text" name="internalport" placeholder="Internal Port" /> Select external port:
 			<select name="externalport" form="mapform" id="port-select">
