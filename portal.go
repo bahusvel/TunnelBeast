@@ -42,7 +42,7 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 
 	log.Println(username, password, internalip, internalport, externalport)
 	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" {
-		w.Write([]byte("ERROR"))
+		w.Write([]byte("ERROR INPUT"))
 		return
 	}
 
@@ -53,7 +53,7 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 	entry := iptables.NATEntry{SourceIP: sourceip, DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport}
 
 	if !authProvider.Authenticate(username, password) {
-		w.Write([]byte("ERROR"))
+		w.Write([]byte("ERROR AUTH"))
 		return
 	}
 
@@ -84,7 +84,6 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ERROR PORT OCCUPIED"))
 		return
 	}
-	delete(availablePorts, entry.ExternalPort)
 
 	err = iptables.NewRoute(entry)
 	if err != nil {
@@ -92,10 +91,12 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	delete(availablePorts, entry.ExternalPort)
+
 	portTable[sourceip] = availablePorts
 	connectionTable[username][entry] = nil
 	//w.Body.Close()
-
+	w.Write([]byte("OK"))
 }
 
 func DeleteRoute(w http.ResponseWriter, r *http.Request) {
