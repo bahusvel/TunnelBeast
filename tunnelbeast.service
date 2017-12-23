@@ -1,0 +1,11 @@
+[Unit]
+Description=TunnelBeast
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/TunnelBeast /etc/tunnelbeast/config.yml
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
