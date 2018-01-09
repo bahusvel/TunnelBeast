@@ -1,7 +1,0 @@
-listendev: eth0
-authmethod: ldap
-authprovider:
-    LDAPAddr: "192.168.1.90:389"
-    DCString: "dc=unitecloud,dc=net"
-    UserObjectClass: "simpleSecurityObject"
-    IPAddressAttribute: "postalAddress"

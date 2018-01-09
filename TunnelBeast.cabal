@@ -1,0 +1,20 @@
+name:                TunnelBeast
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/bahusvel/TunnelBeast#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Denis Lavrov
+maintainer:          bahus.vel@gmail.com
+copyright:           2018 Denis Lavrov
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+
+executable TunnelBeast
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
