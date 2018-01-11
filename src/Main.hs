@@ -40,13 +40,11 @@ addRoute :: Route -> IO ExitCode
 addRoute r = do
     tcp <- spawnCommand $ show $ TF.format addRouteCommand ("eth0" :: String , "tcp" :: String, srcip r, dstip r, dstport r, srcport r)
     tcpResult <- waitForProcess tcp
-    case tcpResult of
-        ExitFailure code -> return $ ExitFailure code
-    udp <- spawnCommand $ show $ TF.format addRouteCommand ("eth0" :: String , "udp" :: String, srcip r, dstip r, dstport r, srcport r)
-    udpResult <- waitForProcess udp
-    case udpResult of
-        ExitFailure code -> return $ ExitFailure code
-        _                -> return ExitSuccess
+    if tcpResult == ExitSuccess then do
+        udp <- spawnCommand $ show $ TF.format addRouteCommand ("eth0" :: String , "udp" :: String, srcip r, dstip r, dstport r, srcport r)
+        waitForProcess udp
+    else
+        return tcpResult
 
 
 addHandler req respond =
