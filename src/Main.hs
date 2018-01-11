@@ -3,7 +3,6 @@ module Main where
 
 import           Control.Applicative        ((<$>))
 import           Control.Monad
-import           Control.Monad.Trans
 import qualified Data.ByteString.Char8      as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import           Data.IP
@@ -15,6 +14,8 @@ import           Network.Wai
 import           Network.Wai.Handler.Warp
 
 import qualified Data.Text.Format           as TF
+import           System.Exit
+import           System.IO
 import           System.Process
 
 data Route = Route {
@@ -35,8 +36,18 @@ app req respond = case rawPathInfo req of
     "/"    -> index respond
     "/add" -> addHandler req respond
 
-addRoute :: Route -> IO ()
-addRoute r = print $ TF.format addRouteCommand ("eth0" :: String , "tcp" :: String, srcip r, dstip r, dstport r, srcport r)
+addRoute :: Route -> IO ExitCode
+addRoute r = do
+    tcp <- spawnCommand $ show $ TF.format addRouteCommand ("eth0" :: String , "tcp" :: String, srcip r, dstip r, dstport r, srcport r)
+    tcpResult <- waitForProcess tcp
+    case tcpResult of
+        ExitFailure code -> return $ ExitFailure code
+    udp <- spawnCommand $ show $ TF.format addRouteCommand ("eth0" :: String , "udp" :: String, srcip r, dstip r, dstport r, srcport r)
+    udpResult <- waitForProcess udp
+    case udpResult of
+        ExitFailure code -> return $ ExitFailure code
+        _                -> return ExitSuccess
+
 
 addHandler req respond =
     let q = queryString req
