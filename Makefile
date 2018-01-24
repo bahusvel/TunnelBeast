@@ -3,6 +3,7 @@ DEPLOY_NODE = 192.168.1.91
 
 deps:
 	go get -u github.com/jteeuwen/go-bindata/...
+	go get github.com/boltdb/bolt/...
 
 assets:
 	go-bindata html

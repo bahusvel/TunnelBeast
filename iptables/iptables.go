@@ -11,6 +11,7 @@ type NATEntry struct {
 	DestinationIP string
 	ExternalPort  string
 	InternalPort  string
+	Client        string
 }
 
 var INTERFACE = "eth0"
