@@ -1,11 +1,14 @@
 listendev: enp0s3
 authmethod: ldap
 
+# provide path to .db file to save users favorite routes
+dbpath: ./bolt.db
+
 # Encrypt method: none, manual, letsEncrypt
-#   none:         use http 
-#   manual:       use your own TLS certificate file 
-#   letsEncrypt:  use Let's Encrypt for https 
-https: letsEncrypt 
+#   none:         use http
+#   manual:       use your own TLS certificate file
+#   letsEncrypt:  use Let's Encrypt for https
+https: letsEncrypt
 
 # if 'manual' encrypt is used, 'path' must be used to indicate /path/to/certificate/file
 # give full path to .crt file in the 'path', .key should present in the same directory with the same file name

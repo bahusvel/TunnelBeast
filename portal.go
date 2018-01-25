@@ -250,7 +250,6 @@ func AddRecord(w http.ResponseWriter, r *http.Request) {
 
 	username := r.PostForm.Get("username")
 	password := r.PostForm.Get("password")
-	sourceip := r.PostForm.Get("sourceip")
 	internalip := r.PostForm.Get("internalip")
 	internalport := r.PostForm.Get("internalport")
 	externalport := r.PostForm.Get("externalport")
@@ -267,7 +266,7 @@ func AddRecord(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := username + "/favorite/" + recordname
-	value := iptables.NATEntry{SourceIP: sourceip, DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport}
+	value := boltdb.RecordValue{DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport, RecordName: recordname}
 
 	err = boltdb.AddRecord(key, value)
 	if err != nil {
@@ -276,7 +275,7 @@ func AddRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("favorite route added: ", username, recordname, internalip, internalport, externalport)
+	log.Println("favorite route added: ", username, recordname, externalport, internalip, internalport)
 	w.Write([]byte("OK"))
 }
 
@@ -288,7 +287,6 @@ func DeleteRecord(w http.ResponseWriter, r *http.Request) {
 
 	username := r.PostForm.Get("username")
 	password := r.PostForm.Get("password")
-	//sourceip := r.PostForm.Get("sourceip")
 	internalip := r.PostForm.Get("internalip")
 	internalport := r.PostForm.Get("internalport")
 	externalport := r.PostForm.Get("externalport")
@@ -305,19 +303,15 @@ func DeleteRecord(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := username + "/favorite/" + recordname
-	//value := iptables.NATEntry{SourceIP: sourceip, DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport}
-	//v, err := json.Marshal(value)
-	//record := boltdb.BoltDB{Key: []byte(key), Value: []byte(v)}
 
 	err = boltdb.DeleteRecord(key)
-	log.Println("delete key: ", key)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	log.Println("favorite route deleted: ", username, recordname, internalip, internalport, externalport)
+	log.Println("favorite route deleted: ", username, recordname, externalport, internalip, internalport)
 	w.Write([]byte("OK"))
 }
 
@@ -335,22 +329,18 @@ func ListRecords(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	keys := make([]string, 1)
-	values := make([]iptables.NATEntry, 1)
-
-	keys, values, err = boltdb.ListRecords(username)
-	i := 0
-	for _ = range values {
-		values[i].Client = strings.Split(keys[i], "/")[2]
-		i++
-	}
+	values := make([]boltdb.RecordValue, 0)
+	values, err = boltdb.ListRecords(username)
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
+		w.Write([]byte("ERROR RECORD"))
 	}
+
 	data, err := json.Marshal(values)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	w.Write(data)
 }
 
@@ -375,7 +365,7 @@ func main() {
 		return
 	}
 
-	err = boltdb.Init()
+	err = boltdb.Init(conf.DBpath)
 	if err != nil {
 		log.Println("Error open boltdb", err)
 	}

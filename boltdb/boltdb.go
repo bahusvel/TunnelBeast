@@ -1,41 +1,61 @@
 package boltdb
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"log"
-	"strings"
 
-	"github.com/bahusvel/TunnelBeast/iptables"
 	"github.com/boltdb/bolt"
 )
+
+type RecordValue struct {
+	RecordName    string
+	DestinationIP string
+	ExternalPort  string
+	InternalPort  string
+}
 
 var (
 	db *bolt.DB
 
-	BUCKETNAME        = "userRoutes"
-	DBFILE            = "bolt.db"
-	ErrBucketNotFound = errors.New("Error Bucket not found")
-	ErrDoesNotExist   = errors.New("Error Input")
-	ErrExists         = errors.New("Error Record Exists")
+	BUCKETNAME          = "userRoutes"
+	ErrBucketNotCreated = errors.New("Error Bucket not created")
+	ErrBucketNotFound   = errors.New("Error Bucket not found")
+	ErrExists           = errors.New("ERROR RECORD EXISTS")
 )
 
-func Init() error {
-	db, _ = bolt.Open(DBFILE, 0600, nil)
+func Init(Path string) error {
+	var err error
+	db, err = bolt.Open(Path, 0600, nil)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	db.Update(func(tx *bolt.Tx) error {
+		_, err = tx.CreateBucketIfNotExists([]byte(BUCKETNAME))
+		if err != nil {
+			log.Println(err)
+			return ErrBucketNotCreated
+		}
+		return nil
+	})
 	return nil
 }
 
-func AddRecord(key string, value iptables.NATEntry) error {
+func AddRecord(key string, value RecordValue) error {
 	return db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte(BUCKETNAME))
-		if err != nil {
-			return ErrBucketNotFound
-		}
+		bucket := tx.Bucket([]byte(BUCKETNAME))
 		v := bucket.Get([]byte(key))
 		if v != nil {
 			return ErrExists
 		}
-		val, _ := json.Marshal(value)
+		val, err := json.Marshal(value)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
 		return bucket.Put([]byte(key), val)
 	})
 }
@@ -50,27 +70,25 @@ func DeleteRecord(key string) error {
 	})
 }
 
-func ListRecords(username string) (keys []string, values []iptables.NATEntry, err error) {
-	return keys, values, db.View(func(tx *bolt.Tx) error {
-		//bucket, err := tx.CreateBucketIfNotExists([]byte(BUCKETNAME))
+func ListRecords(username string) (values []RecordValue, err error) {
+	return values, db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(BUCKETNAME))
 		if bucket == nil {
 			return ErrBucketNotFound
 		}
 
-		return bucket.ForEach(func(k, v []byte) error {
-			log.Println(string(k), string(v))
-			if strings.Contains(string(k), username+"/") {
-				key := string(k)
-				keys = append(keys, key)
-				var value iptables.NATEntry
-				err := json.Unmarshal(v, &value)
-				if err != nil {
-					log.Println(err)
-				}
-				values = append(values, value)
+		cursor := bucket.Cursor()
+		prefix := []byte(username)
+
+		for k, v := cursor.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = cursor.Next() {
+			var value RecordValue
+			err := json.Unmarshal(v, &value)
+			if err != nil {
+				log.Println(err)
+				return err
 			}
-			return nil // Continue ForEach
-		})
+			values = append(values, value)
+		}
+		return nil
 	})
 }

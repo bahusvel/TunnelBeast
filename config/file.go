@@ -13,6 +13,7 @@ import (
 )
 
 type Configuration struct {
+	DBpath       string
 	Https        string
 	Path         string
 	ListenDev    string
@@ -22,6 +23,7 @@ type Configuration struct {
 }
 
 type configuration struct {
+	DBpath       string
 	Https        string
 	Path         string
 	ListenDev    string
@@ -74,6 +76,7 @@ func LoadConfig(filePath string, conf *Configuration) {
 		log.Fatal("Failed reading config file", err)
 	}
 	conf.ListenDev = tmpConfig.ListenDev
+	conf.DBpath = tmpConfig.DBpath
 	conf.Https = tmpConfig.Https
 	conf.Path = tmpConfig.Path
 	conf.Ports = tmpConfig.Ports
