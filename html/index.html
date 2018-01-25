@@ -2,12 +2,28 @@
 
 <head>
 	<meta charset="utf-8">
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+	<script src="https://use.fontawesome.com/releases/v5.0.4/js/all.js"></script>
+
 	<style>
 		@import url(https://fonts.googleapis.com/css?family=Roboto:300);
+		@font-face {
+			font-family: 'Arvo';
+			src: url(ArvoBoldItalic.ttf);
+		}
+
+		.title {
+			position: relative;
+			font-family: 'Arvo', serif;
+			text-align: center;
+			font-size: 350%;
+			padding: 2% 0 0;
+			color: white;
+		}
 
 		.login-page {
 			width: 360px;
-			padding: 8% 0 0;
+			padding: 3% 0 0;
 			margin: auto;
 		}
 
@@ -16,8 +32,8 @@
 			z-index: 1;
 			background: #FFFFFF;
 			max-width: 360px;
-			margin: 0 auto 100px;
-			padding: 20px;
+			margin: 0 auto 50px;
+			padding: 18px;
 			text-align: center;
 			box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
 		}
@@ -26,11 +42,24 @@
 			font-family: "Roboto", sans-serif;
 			outline: 0;
 			background: #f2f2f2;
+			border: 0;
 			width: 100%;
+			margin: 0 0 15px;
+			padding: 10px;
+			box-sizing: border-box;
+			text-align: left;
+			font-size: 12px;
+		}
+
+		.name-field {
+			font-family: "Roboto", sans-serif;
+			outline: 0;
+			background: #f2f2f2;
 			border: 0;
 			margin: 0 0 15px;
 			padding: 10px;
 			box-sizing: border-box;
+			text-align: center;
 			font-size: 12px;
 		}
 
@@ -47,7 +76,7 @@
 			z-index: 1;
 			background: #FFFFFF;
 			max-width: 360px;
-			margin: 0 auto 100px;
+			margin: 0 auto 50px;
 			padding: 20px;
 			text-align: center;
 			box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
@@ -96,21 +125,22 @@
 			cursor: pointer;
 		}
 
-		.delete-button {
+		.small-button {
 			font-family: "Roboto", sans-serif;
 			text-transform: uppercase;
 			outline: 0;
 			background: #4CAF50;
-			width: 10%;
+			width: 18px;
 			border: 0;
-			margin-left: 10px;
-			padding: 10px;
+			margin-left: 2px;
+			padding: 8px;
 			color: #FFFFFF;
 			font-size: 14px;
 			-webkit-transition: all 0.3 ease;
 			transition: all 0.3 ease;
 			cursor: pointer;
 			display: inline-block;
+			text-align: center;
 		}
 
 		body {
@@ -124,6 +154,7 @@
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
 		}
+
 	</style>
 </head>
 
@@ -132,13 +163,17 @@
 		var USERNAME = "";
 		var PASSWORD = "";
 		var ROUTES = [];
+		var RECORDS = [];
+
 		var map = {
 			"ERROR ACCESS DENIED" : "Access denied. Please contact your administrator. <br/><br/>",
 			"ERROR EXISTS" : "Routes exists. Please check your input data. <br/><br/>",
 			"ERROR PORT OCCUPIED" : "Port occupied. Please try another port. <br/><br/>",
 			"ERROR INPUT" : "Input error. Please check your input data. <br/><br/>",
 			"ERROR AUTH" : "Incorrect user ID or password. <br/><br/>",
-			"ERROR NOT EXIST" : "The route you try to delete is not exist.<br/><br/>"
+			"ERROR NOT EXIST" : "The route you try to delete is not exist.<br/><br/>",
+			"ERROR RECORD" : "Connection to Database error, try it again later. <br/><br/>",
+			"ERROR RECORD EXISTS" : "Record name conflict, try another name. <br/><br/>"
 		};
 
 		function create(htmlStr) {
@@ -154,9 +189,7 @@
 		function deleteRoute(index) {
 			var route = ROUTES[index];
 
-			console.log(route);
-
-			var params = `username=${USERNAME}&password=${PASSWORD}&sourceip=${route.SourceIP}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
+			var params = `username=${USERNAME}&password=${PASSWORD}&client=${route.Client}&sourceip=${route.SourceIP}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
 
 			var xhr = new XMLHttpRequest();
 			var delErrorElement = document.getElementById("deleteRouteError");
@@ -186,25 +219,75 @@
 
 			xhr.send(params);
 
-			console.log(xhr.responseText);
-
 			refresh();
 			return false;
 		}
 
 		function showRoute(route, index) {
 			var html =
-				`<div class="grey-field">
-									<p style="display:inline">
-									${route.SourceIP} -> ${route.ExternalPort}:${route.DestinationIP}:${route.InternalPort}
-									</p>
-									<div class="delete-button" onclick="deleteRoute(${index});">
-									-
-									</div>
-						</div>`
+				`<tr>
+					<td class="grey-field">
+						${route.SourceIP} -> ${route.ExternalPort}:${route.DestinationIP}:${route.InternalPort}
+					</td>
+					<td><div class="small-button" onclick="deleteRoute(${index});">
+						<i class="fas fa-trash-alt"></i></div>
+					</td>
+					<td><div class="small-button" onclick="addRecord(${index});">
+						<i class="far fa-heart"></i></div>
+					</td>
+				</tr>`
+			$("#routes").append(html);
+		}
 
-			var fragment = create(html);
-			document.getElementById("routes").appendChild(fragment);
+		function showRecord(record, index) {
+			var html =
+				`<tr>
+					<td class="name-field">
+						${record.RecordName}
+					</td>
+				 	<td class="grey-field">
+						${record.ExternalPort} -> ${record.DestinationIP}:${record.InternalPort}
+					</td>
+					<td><div class="small-button" onclick="deleteRecord(${index});">
+						<i class="fas fa-trash-alt"></i></div>
+					</td>
+					<td><div class="small-button" onclick="useRecord(${index});">
+						<i class="fas fa-plus-circle"></i></div>
+					</td>
+				</tr>`
+			$("#records").append(html);
+		}
+
+		function deleteRecord(index) {
+			var record = RECORDS[index];
+			var params = `recordname=${record.RecordName}&username=${USERNAME}&password=${PASSWORD}&internalip=${record.DestinationIP}&externalport=${record.ExternalPort}&internalport=${record.InternalPort}`;
+			var xhr = new XMLHttpRequest();
+			var delErrorElement = document.getElementById("deleteRecordError");
+
+			xhr.open('POST', "/deleteRecord", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					if (xhr.responseText == "OK") {
+						delErrorElement.setAttribute("hidden", "true");
+						return;
+					}
+
+					if (!(xhr.responseText in map)){
+						delErrorElement.removeAttribute("hidden");
+						delErrorElement.innerHTML = "Record delete failed. Please try again. <br/><br/>";
+						return;
+					}
+
+					delErrorElement.removeAttribute("hidden");
+					delErrorElement.innerHTML = map[xhr.responseText];
+				}
+			}
+
+			xhr.send(params);
+			refresh();
+			return false;
 		}
 
 		function addRoute(form) {
@@ -256,10 +339,87 @@
 			return false;
 		}
 
+		function useRecord(index) {
+			var record = RECORDS[index];
+
+			var params = `username=${USERNAME}&password=${PASSWORD}&internalip=${record.DestinationIP}&externalport=${record.ExternalPort}&internalport=${record.InternalPort}`;
+			var xhr = new XMLHttpRequest();
+			var addErrorElement = document.getElementById("addRouteError");
+
+			xhr.open('POST', "/add", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					document.getElementById("deleteRouteError").setAttribute("hidden", "true");
+
+					if (xhr.responseText == "OK") {
+						addErrorElement.setAttribute("hidden", "true");
+						return;
+					}
+
+					addErrorElement.removeAttribute("hidden");
+					document.getElementById("map_internalip").value = record.DestinationIP;
+					document.getElementById("map_internalport").value = record.InternalPort;
+
+					if (!(xhr.responseText in map)){
+						addErrorElement.innerHTML = "Active favorite route failed. Please try again. <br/><br/>";
+						return;
+					}
+
+					addErrorElement.innerHTML = map[xhr.responseText];
+				}
+			}
+
+			xhr.send(params);
+			refresh();
+			return false;
+		}
+
+		function addRecord(index) {
+			var route = ROUTES[index];
+
+			var RECORDNAME = prompt("Please enter a name for your favorite route: ", "myRoute");
+			if (RECORDNAME == null) {
+				return;
+			}
+
+			var params = `recordname=${RECORDNAME}&username=${USERNAME}&password=${PASSWORD}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
+			var xhr = new XMLHttpRequest();
+			var delErrorElement = document.getElementById("deleteRecordError");
+
+			xhr.open('POST', "/addRecord", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState == 4 && xhr.status == 200) {
+
+					if (xhr.responseText == "OK") {
+						delErrorElement.setAttribute("hidden", "true");
+						return;
+					}
+
+					if (!(xhr.responseText in map)){
+						delErrorElement.removeAttribute("hidden");
+						delErrorElement.innerHTML = "Route add failed. Please try again. <br/><br/>";
+						return;
+					}
+
+					delErrorElement.removeAttribute("hidden");
+					delErrorElement.innerHTML = map[xhr.responseText];
+				}
+			}
+
+			xhr.send(params);
+			refresh();
+			return false;
+		}
+
 		function logoutForm(form) {
 			USERNAME = "";
 			PASSWORD = "";
 			document.getElementById("route-float").setAttribute("hidden", "true");
+			document.getElementById("record-float").setAttribute("hidden", "true");
 			document.getElementById("mapform").setAttribute("hidden", "true");
 			document.getElementById("login-form").removeAttribute("hidden");
 			document.getElementById("logout-form").setAttribute("hidden", "true");
@@ -271,7 +431,6 @@
 
 			var xhr = new XMLHttpRequest();
 			xhr.open('POST', "/list", false);
-
 
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 			xhr.send(params);
@@ -287,6 +446,30 @@
 
 			for (var i = 0; i < routes.length; i++) {
 				showRoute(routes[i], i);
+			}
+		}
+
+		function fetchRecords() {
+			var params = `username=${USERNAME}&password=${PASSWORD}`;
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', "/listRecords", false);
+
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send(params);
+			var records = JSON.parse(xhr.responseText);
+
+			RECORDS = records;
+
+			var node = document.getElementById("records");
+			while (node.hasChildNodes()) {
+				node.removeChild(node.lastChild);
+			}
+
+			if ( RECORDS ) {
+				for (var i = 0; i < records.length; i++) {
+						showRecord(records[i], i);
+				}
 			}
 		}
 
@@ -314,6 +497,7 @@
 		function refresh() {
 			getPorts();
 			fetchRoutes();
+			fetchRecords();
 		}
 
 		function loginForm(form) {
@@ -338,27 +522,40 @@
 				"application/x-www-form-urlencoded");
 			http.onreadystatechange = function() {
 				if (http.readyState == 4 && http.status == 200) {
-					if (http.responseText == "OK") {
-						USERNAME = username;
-						PASSWORD = password;
-						document.getElementById("login-form").setAttribute("hidden",
-							"true");
-						document.getElementById("route-float").removeAttribute("hidden");
-						document.getElementById("logout-form").removeAttribute("hidden");
-						document.getElementById("mapform").removeAttribute("hidden");
-						console.log("Auth success");
-						refresh();
-					} else if (http.responseText == "ERROR AUTH") {
-						console.log("Auth failed");
-						document.getElementById("authFail").removeAttribute("hidden");
-						document.getElementById("authFail").innerHTML = map[http.responseText];
+					switch (http.responseText) {
+						case "OK":
+							USERNAME = username;
+							PASSWORD = password;
+							document.getElementById("login-form").setAttribute("hidden", "true");
+							document.getElementById("route-float").removeAttribute("hidden");
+							document.getElementById("record-float").removeAttribute("hidden");
+							document.getElementById("logout-form").removeAttribute("hidden");
+							document.getElementById("mapform").removeAttribute("hidden");
+							console.log("Auth success");
+							refresh();
+							break;
+					 	case "ERROR AUTH":
+							console.log("Auth failed");
+							document.getElementById("authFail").removeAttribute("hidden");
+							document.getElementById("authFail").innerHTML = map[http.responseText];
+							break;
+						default:
+							console.log("Auth error unspecified")
+							document.getElementById("authFail").removeAttribute("hidden");
+							document.getElementById("authFail").innerHTML = "Unspecified error";
+							break;
 					}
 				}
 			}
 			http.send(params);
 			return false;
 		}
+
 	</script>
+
+	<div class="title">
+		TunnelBeast
+	</div>
 
 	<div class="login-page">
 
@@ -373,17 +570,18 @@
 		<div class="white-boxed" id="route-float" hidden="true">
 			Current Routes:
 			<br/>
-			<div id="routes">
-			</div>
+			<table>
+				<tbody id="routes">
+				</tbody>
+			</table>
 			<label hidden="true" class="errorMessage" id="deleteRouteError" for></label>
 		</div>
 
-
 		<form action="#" onsubmit="return addRoute(this);" id="mapform" hidden="true">
 			<label hidden="true" class="errorMessage" id="addRouteError" for></label>
-			<input type="text" name="internalip" placeholder="Internal IP" title="Internal IP Address: X . X . X . X"
+			<input type="text" id="map_internalip" name="internalip" placeholder="Internal IP" title="Internal IP Address: X . X . X . X"
 				pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}$"/>
-			<input type="text" name="internalport" placeholder="Internal Port" title="Internal Port range: 0 ~ 65535"
+			<input type="text" id="map_internalport" name="internalport" placeholder="Internal Port" title="Internal Port range: 0 ~ 65535"
 				pattern="^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$"/>
 			Select external port:
 			<select name="externalport" form="mapform" id="port-select">
@@ -391,11 +589,20 @@
 			<button type="submit">Add</button>
 		</form>
 
+		<div class="white-boxed" id="record-float" hidden="true">
+			Your Favorite Routes:
+			<br/>
+			<table>
+				<tbody id="records">
+				</tbody>
+			</table>
+			<label hidden="true" class="errorMessage" id="deleteRecordError" for></label>
+		</div>
+
 		<form action="#" onsubmit="return logoutForm(this);" hidden="true" id="logout-form">
 			<button type="submit">LOGOUT</button>
 		</form>
 
-	</div>
 	</div>
 </body>
 

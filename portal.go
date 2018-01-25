@@ -3,14 +3,16 @@ package main
 import (
 	"crypto/tls"
 	"encoding/json"
-	"golang.org/x/crypto/acme/autocert"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
+	"golang.org/x/crypto/acme/autocert"
+
 	"github.com/bahusvel/TunnelBeast/auth"
+	"github.com/bahusvel/TunnelBeast/boltdb"
 	"github.com/bahusvel/TunnelBeast/config"
 	"github.com/bahusvel/TunnelBeast/iptables"
 )
@@ -187,8 +189,6 @@ func ListRoutes(w http.ResponseWriter, r *http.Request) {
 		i++
 	}
 
-	//keys := []iptables.NATEntry{{SourceIP: "192.168.1.1", DestinationIP: "192.168.1.2", ExternalPort: "80", InternalPort: "8080"}}
-
 	data, err := json.Marshal(keys)
 	if err != nil {
 		log.Fatal(err)
@@ -242,6 +242,108 @@ func Authenticate(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+func AddRecord(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	internalip := r.PostForm.Get("internalip")
+	internalport := r.PostForm.Get("internalport")
+	externalport := r.PostForm.Get("externalport")
+	recordname := r.PostForm.Get("recordname")
+
+	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" {
+		w.Write([]byte("ERROR INPUT"))
+		return
+	}
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	key := username + "/favorite/" + recordname
+	value := boltdb.RecordValue{DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport, RecordName: recordname}
+
+	err = boltdb.AddRecord(key, value)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	log.Println("favorite route added: ", username, recordname, externalport, internalip, internalport)
+	w.Write([]byte("OK"))
+}
+
+func DeleteRecord(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	internalip := r.PostForm.Get("internalip")
+	internalport := r.PostForm.Get("internalport")
+	externalport := r.PostForm.Get("externalport")
+	recordname := r.PostForm.Get("recordname")
+
+	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" || recordname == "" {
+		w.Write([]byte("ERROR INPUT"))
+		return
+	}
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	key := username + "/favorite/" + recordname
+
+	err = boltdb.DeleteRecord(key)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	log.Println("favorite route deleted: ", username, recordname, externalport, internalip, internalport)
+	w.Write([]byte("OK"))
+}
+
+func ListRecords(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	values := make([]boltdb.RecordValue, 0)
+	values, err = boltdb.ListRecords(username)
+	if err != nil {
+		log.Fatal(err)
+		w.Write([]byte("ERROR RECORD"))
+	}
+
+	data, err := json.Marshal(values)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.Write(data)
+}
+
 func redirectTLS(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
 }
@@ -263,6 +365,11 @@ func main() {
 		return
 	}
 
+	err = boltdb.Init(conf.DBpath)
+	if err != nil {
+		log.Println("Error open boltdb", err)
+	}
+
 	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		HostPolicy: autocert.HostWhitelist(conf.Domainname),
@@ -276,13 +383,15 @@ func main() {
 	mux.HandleFunc("/ports", ListPorts)
 	mux.HandleFunc("/auth", Authenticate)
 	mux.HandleFunc("/list", ListRoutes)
+	mux.HandleFunc("/addRecord", AddRecord)
+	mux.HandleFunc("/deleteRecord", DeleteRecord)
+	mux.HandleFunc("/listRecords", ListRecords)
 
 	port80 := &http.Server{}
 
 	switch conf.Https {
 	case "none":
 		port80 = &http.Server{Addr: ":80", Handler: mux}
-
 	case "manual":
 		port80 = &http.Server{Addr: ":80", Handler: http.HandlerFunc(redirectTLS)}
 		port443 := &http.Server{Addr: ":443", Handler: mux}
