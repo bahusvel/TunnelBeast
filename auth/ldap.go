@@ -12,6 +12,7 @@ type LDAPAuth struct {
 	DCString           string
 	IPAddressAttribute string
 	UserObjectClass    string
+	AdminInformation   string
 }
 
 func (this LDAPAuth) Init() {
@@ -86,4 +87,23 @@ func (this LDAPAuth) Authenticate(Username string, Password string) bool {
 		return false
 	}
 	return true
+}
+
+func (this LDAPAuth) CheckAdminPanel(Username string) bool {
+	if this.AdminInformation == "" {
+		return false
+	}
+
+	l, err := ldap.Dial("tcp", this.LDAPAddr)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	defer l.Close()
+
+	matched, err := l.Compare("cn="+Username+","+this.DCString, "objectClass", this.AdminInformation)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return matched
 }

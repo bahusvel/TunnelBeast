@@ -258,6 +258,24 @@
 			$("#records").append(html);
 		}
 
+		function showAllRoutes(route, index) {
+			var html =
+				`<tr>
+					<td class="name-field">
+						${route.Client}
+					<td class="grey-field">
+						${route.SourceIP} -> ${route.ExternalPort}: ${route.DestinationIP}:${route.InternalPort}
+					<td class="name-field">
+						${route.Traffic}
+					</td>
+					<td><div class="small-button" onclick="deleteRoute(${index});">
+						<i class="fas fa-trash-alt"></i></div>
+					</td>
+				</tr>`
+
+			$("#routes-all").append(html);
+		}
+
 		function deleteRecord(index) {
 			var record = RECORDS[index];
 			var params = `recordname=${record.RecordName}&username=${USERNAME}&password=${PASSWORD}&internalip=${record.DestinationIP}&externalport=${record.ExternalPort}&internalport=${record.InternalPort}`;
@@ -423,6 +441,7 @@
 			document.getElementById("mapform").setAttribute("hidden", "true");
 			document.getElementById("login-form").removeAttribute("hidden");
 			document.getElementById("logout-form").setAttribute("hidden", "true");
+			document.getElementById("route-float-all").setAttribute("hidden", "true");
 			return false;
 		}
 
@@ -444,10 +463,33 @@
 				node.removeChild(node.lastChild);
 			}
 
+			var nodesAll = document.getElementById("routes-all");
+			while (nodesAll.hasChildNodes()) {
+				nodesAll.removeChild(nodesAll.lastChild);
+			}
+
 			for (var i = 0; i < routes.length; i++) {
-				showRoute(routes[i], i);
+				if (routes[i].Client == "") {
+					showRoute(routes[i], i);
+				} else {
+					showAllRoutes(routes[i], i);
+				}
 			}
 		}
+
+		function deleteAllRoutes() {
+			var params = `username=${USERNAME}&password=${PASSWORD}`;
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', "/deleteAll", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send(params);
+			console.log(xhr.responseText);
+
+			refresh();
+			return false;
+		}
+
 
 		function fetchRecords() {
 			var params = `username=${USERNAME}&password=${PASSWORD}`;
@@ -457,6 +499,7 @@
 
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 			xhr.send(params);
+			console.log(xhr.responseText);
 			var records = JSON.parse(xhr.responseText);
 
 			RECORDS = records;
@@ -472,7 +515,6 @@
 				}
 			}
 		}
-
 		function getPorts() {
 			var xhr = new XMLHttpRequest();
 			xhr.open('GET', "/ports", false);
@@ -523,6 +565,8 @@
 			http.onreadystatechange = function() {
 				if (http.readyState == 4 && http.status == 200) {
 					switch (http.responseText) {
+						case "ADMIN":
+							document.getElementById("route-float-all").removeAttribute("hidden");
 						case "OK":
 							USERNAME = username;
 							PASSWORD = password;
@@ -588,7 +632,6 @@
 			</select>
 			<button type="submit">Add</button>
 		</form>
-
 		<div class="white-boxed" id="record-float" hidden="true">
 			Your Favorite Routes:
 			<br/>
@@ -603,6 +646,18 @@
 			<button type="submit">LOGOUT</button>
 		</form>
 
+		<form class="white-boxed" onsubmit="return deleteAllRoutes(this);" id="route-float-all" hidden="true">
+			Current Routes for All Users:
+			<br/>
+			<label hidden="true" class="errorMessage" for></label>
+			<table>
+				<tbody id="routes-all">
+				</tbody>
+			</table>
+			<button type="submit">Delete All</button>
+		</form>
+
+	</div>
 	</div>
 </body>
 

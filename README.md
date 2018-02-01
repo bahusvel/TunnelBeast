@@ -29,6 +29,16 @@ curl --data "username=$YourUserName&password=$YourPassword" https://$TunnelBeast
 curl --data "username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP&externalport=$YourExternalPort&internalport=$YourInternalPort" https://$TunnelBeastIP/add
 4. Delete one existing mapping:
 curl --data "username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP&externalport=$YourExternalPort&internalport=$YourInternalPort&sourceip=$YourSourceIP" https://$TunnelBeastIP/delete
+5. List your favorite routes:
+curl --data "username=$YourUserName&password=$YourPassword" https://$TunnelBeastIP/listRecords
+6. Add a favorite route ($myRoute) to BoltDB:
+curl --data "username=$YourUserName&password=$YourPassword&recordname=$myRoute&internalip=$YourInternalIP&externalport=$YourExternalPort&internalport=$YourInternalPort" https://$TunnelBeastIP/addRecord
+7. Active one of your favorite route:
+curl --data "username=$YourUserName&password=$YourPassword&internalip=$YourInternalIP&externalport=$YourExternalPort&internalport=$YourInternalPort" https://$TunnelBeastIP/add
+8. Delete one favorite route:
+curl --data "username=$YourUserName&password=$YourPassword&recordname=$myRoute&internalip=$YourInternalIP&externalport=$YourExternalPort&internalport=$YourInternalPort" https://$TunnelBeastIP/deleteRecord
+9. Delete all current routes on server (admin users only):
+curl --data "username=$YourUserName&password=$YourPassword" https://$TunnelBeastIP/deleteAll
 
 # Internals
 TunnelBeast uses source IP to distinguish different clients hence if client A and client B have the same source IP (they are behind NAT/Gateway) they will see the same thing when trying to access TunnelBeast IP address. If you are worried about this you need to use TunnelBeast in multi IP mode. That way on successive logins clients will be given different public IPs to use.

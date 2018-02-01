@@ -124,6 +124,11 @@ func DeleteRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if authProvider.CheckAdminPanel(username) &&
+		r.PostForm.Get("client") != username && r.PostForm.Get("client") != "" {
+		username = r.PostForm.Get("client")
+	}
+
 	entries, ok := connectionTable[username]
 	if !ok {
 		w.Write([]byte("ERROR NOT EXIST"))
@@ -143,6 +148,40 @@ func DeleteRoute(w http.ResponseWriter, r *http.Request) {
 
 	portTable[sourceip][entry.ExternalPort] = nil
 	delete(connectionTable[username], entry)
+	w.Write([]byte("OK"))
+}
+
+func DeleteAll(w http.ResponseWriter, r *http.Request) {
+	log.Println("Delete All Routes request", r.RemoteAddr)
+
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	if !authProvider.CheckAdminPanel(username) {
+		w.Write([]byte("ERROR ACCESS DENIED"))
+		return
+	}
+
+	for user, _ := range connectionTable {
+		for entry := range connectionTable[user] {
+			portTable[entry.SourceIP][entry.ExternalPort] = nil
+			delete(connectionTable[user], entry)
+			err = iptables.DeleteRoute(entry)
+			if err != nil {
+				w.Write([]byte(err.Error()))
+				return
+			}
+		}
+	}
 	w.Write([]byte("OK"))
 }
 
@@ -187,6 +226,16 @@ func ListRoutes(w http.ResponseWriter, r *http.Request) {
 	for k := range entries {
 		keys[i] = k
 		i++
+	}
+
+	if authProvider.CheckAdminPanel(username) {
+		for user, _ := range connectionTable {
+			for k := range connectionTable[user] {
+				k.Client = user
+				k.Traffic = iptables.Traffic(k)
+				keys = append(keys, k)
+			}
+		}
 	}
 
 	data, err := json.Marshal(keys)
@@ -239,6 +288,12 @@ func Authenticate(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ERROR AUTH"))
 		return
 	}
+
+	if authProvider.CheckAdminPanel(username) {
+		w.Write([]byte("ADMIN"))
+		return
+	}
+
 	w.Write([]byte("OK"))
 }
 
@@ -383,6 +438,7 @@ func main() {
 	mux.HandleFunc("/ports", ListPorts)
 	mux.HandleFunc("/auth", Authenticate)
 	mux.HandleFunc("/list", ListRoutes)
+	mux.HandleFunc("/deleteAll", DeleteAll)
 	mux.HandleFunc("/addRecord", AddRecord)
 	mux.HandleFunc("/deleteRecord", DeleteRecord)
 	mux.HandleFunc("/listRecords", ListRecords)

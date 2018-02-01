@@ -23,6 +23,7 @@ var (
 	ErrBucketNotCreated = errors.New("Error Bucket not created")
 	ErrBucketNotFound   = errors.New("Error Bucket not found")
 	ErrExists           = errors.New("ERROR RECORD EXISTS")
+	ErrNotExist         = errors.New("ERROR RECORD NOT EXIST")
 )
 
 func Init(Path string) error {
@@ -47,6 +48,9 @@ func Init(Path string) error {
 func AddRecord(key string, value RecordValue) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(BUCKETNAME))
+		if bucket == nil {
+			return ErrBucketNotFound
+		}
 		v := bucket.Get([]byte(key))
 		if v != nil {
 			return ErrExists
@@ -65,6 +69,10 @@ func DeleteRecord(key string) error {
 		bucket := tx.Bucket([]byte(BUCKETNAME))
 		if bucket == nil {
 			return ErrBucketNotFound
+		}
+		v := bucket.Get([]byte(key))
+		if v == nil {
+			return ErrNotExist
 		}
 		return bucket.Delete([]byte(key))
 	})
