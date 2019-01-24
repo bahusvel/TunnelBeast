@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"html/template"
 	"log"
@@ -398,8 +397,8 @@ func main() {
 		go func() { err = port443.ListenAndServeTLS(conf.Path, conf.Path[:len(conf.Path)-4]+".key") }()
 	case "letsEncrypt":
 		port80 = &http.Server{Addr: ":80", Handler: http.HandlerFunc(redirectTLS)}
-		port443 := &http.Server{Addr: ":443", Handler: mux, TLSConfig: &tls.Config{GetCertificate: certManager.GetCertificate}}
-		go func() { err = port443.ListenAndServeTLS("", "") }() //key and cert are coming from Let's tEncrypti
+		port443 := &http.Server{Addr: ":443", Handler: mux, TLSConfig: certManager.TLSConfig()}
+		go func() { err = port443.ListenAndServeTLS("", "") }() //key and cert are coming from Let's Encrypt
 	default:
 		log.Println("Error https configure")
 		return
