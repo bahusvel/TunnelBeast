@@ -58,7 +58,7 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !authProvider.CheckDestinationIP(internalip, username) {
+	if !authProvider.CheckDestinationIP(internalip, username, password) {
 		w.Write([]byte("ERROR ACCESS DENIED"))
 		return
 	}

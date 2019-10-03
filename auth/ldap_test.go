@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"gopkg.in/ldap.v2"
 	"testing"
+	"log"
 )
 
 func TestIPFromLDAP(t *testing.T) {
-	this := LDAPAuth{LDAPAddr: "192.168.1.90:389", DCString: "dc=unitecloud,dc=net", IPAddressAttribute: "postalAddress", UserObjectClass: "simpleSecurityObject"}
+	this := LDAPAuth{LDAPAddr: "ldap.unitecloud.net:389", DCString: "dc=unitecloud,dc=net", IPAddressAttribute: "telephoneNumber", UserObjectClass: "*"}
 
 	l, err := ldap.Dial("tcp", this.LDAPAddr)
 	if err != nil {
@@ -15,7 +16,14 @@ func TestIPFromLDAP(t *testing.T) {
 		return
 	}
 	defer l.Close()
-	ips, err := this.queryIPAddress(l, "guest")
+
+	err = l.Bind("cn="+"tunnel2"+","+this.DCString, "cp-x2520")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	ips, err := this.queryIPAddress(l, "tunnel2")
 	if err != nil {
 		t.Error(err)
 	}

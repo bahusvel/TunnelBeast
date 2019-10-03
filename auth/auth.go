@@ -2,7 +2,7 @@ package auth
 
 type AuthProvider interface {
 	Init()
-	CheckDestinationIP(dstip string, Username string) bool
+	CheckDestinationIP(dstip string, Username string, Password string) bool
 	Authenticate(Username string, Password string) bool
 }
 
@@ -22,6 +22,6 @@ func (this TestAuth) Authenticate(Username string, Password string) bool {
 	return false
 }
 
-func (this TestAuth) CheckDestinationIP(dstip string, Username string) bool {
+func (this TestAuth) CheckDestinationIP(dstip string, Username string, Password string) bool {
 	return true
 }

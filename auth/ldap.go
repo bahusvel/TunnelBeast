@@ -11,19 +11,19 @@ type LDAPAuth struct {
 	LDAPAddr           string
 	DCString           string
 	IPAddressAttribute string
-	UserObjectClass    string
+	UserRDN 		   string
 }
 
 func (this LDAPAuth) Init() {
 
 }
 
-func (this LDAPAuth) queryIPAddress(LdapClient *ldap.Conn, Username string) ([]string, error) {
+func (this LDAPAuth) queryIPAddress(LdapClient *ldap.Conn, username string) ([]string, error) {
 
-	searchRequest := ldap.NewSearchRequest(fmt.Sprintf("cn=%s,%s", Username, this.DCString),
+	searchRequest := ldap.NewSearchRequest(fmt.Sprintf("%s=%s,%s", this.UserRDN, username, this.DCString),
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		"(&(objectClass="+this.UserObjectClass+"))",   // The filter to apply
-		[]string{"dn", "cn", this.IPAddressAttribute}, // A list attributes to retrieve
+		"(&(objectClass=*))",   // The filter to apply
+		[]string{"dn", this.IPAddressAttribute}, // A list attributes to retrieve
 		nil,
 	)
 
@@ -55,13 +55,25 @@ func (this LDAPAuth) CheckSourceIP(srcip string) bool {
 	return true
 }
 
-func (this LDAPAuth) CheckDestinationIP(dstip string, Username string) bool {
+func (this LDAPAuth) CheckDestinationIP(dstip string, username string, password string) bool {
 	if this.IPAddressAttribute == "" {
 		return true
 	}
 
 	l, err := ldap.Dial("tcp", this.LDAPAddr)
-	ipList, err := this.queryIPAddress(l, Username)
+
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	err = l.Bind(fmt.Sprintf("%s=%s,%s", this.UserRDN, username, this.DCString), password)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	ipList, err := this.queryIPAddress(l, username)
 	if err != nil {
 		log.Println(err)
 		return false
@@ -72,7 +84,7 @@ func (this LDAPAuth) CheckDestinationIP(dstip string, Username string) bool {
 	return ipAllowed(dstip, ipList)
 }
 
-func (this LDAPAuth) Authenticate(Username string, Password string) bool {
+func (this LDAPAuth) Authenticate(username string, password string) bool {
 	l, err := ldap.Dial("tcp", this.LDAPAddr)
 	if err != nil {
 		log.Println(err)
@@ -80,7 +92,7 @@ func (this LDAPAuth) Authenticate(Username string, Password string) bool {
 	}
 	defer l.Close()
 
-	err = l.Bind("cn="+Username+","+this.DCString, Password)
+	err = l.Bind(fmt.Sprintf("%s=%s,%s", this.UserRDN, username, this.DCString), password)
 	if err != nil {
 		log.Println(err)
 		return false
