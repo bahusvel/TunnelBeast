@@ -33,6 +33,8 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
 	}
 	username := r.PostForm.Get("username")
 	password := r.PostForm.Get("password")
@@ -106,6 +108,8 @@ func DeleteRoute(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
 	}
 	username := r.PostForm.Get("username")
 	password := r.PostForm.Get("password")
@@ -116,7 +120,7 @@ func DeleteRoute(w http.ResponseWriter, r *http.Request) {
 
 	entry := iptables.NATEntry{SourceIP: sourceip, DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport}
 
-	log.Println(entry)
+	log.Println("Delete", entry)
 
 	if !authProvider.Authenticate(username, password) {
 		w.Write([]byte("ERROR AUTH"))
@@ -169,6 +173,8 @@ func ListRoutes(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	username := r.PostForm.Get("username")
@@ -180,7 +186,7 @@ func ListRoutes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	entries := connectionTable[username]
-	log.Println(len(entries))
+	//log.Println(len(entries))
 	keys := make([]iptables.NATEntry, len(entries))
 	i := 0
 	for k := range entries {
@@ -214,7 +220,7 @@ func ListPorts(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Println(keys)
+	log.Println("Free ports for", sourceip, keys)
 
 	data, err := json.Marshal(keys)
 	if err != nil {
@@ -229,6 +235,8 @@ func Authenticate(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	username := r.PostForm.Get("username")
@@ -245,6 +253,8 @@ func AddRecord(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	username := r.PostForm.Get("username")
@@ -282,6 +292,8 @@ func DeleteRecord(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	username := r.PostForm.Get("username")
@@ -318,6 +330,8 @@ func ListRecords(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	username := r.PostForm.Get("username")
