@@ -43,6 +43,7 @@ func ipAllowed(ip string, whitelist []string) bool {
 		_, ipv4Net, err := net.ParseCIDR(testIp)
 		if err != nil {
 			log.Println(err)
+			return false
 		}
 		if ipv4Net.Contains(ipAddr) {
 			return true
