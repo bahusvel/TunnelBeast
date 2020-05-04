@@ -164,6 +164,7 @@
 		var PASSWORD = "";
 		var ROUTES = [];
 		var RECORDS = [];
+		var USERS = [];
 
 		var map = {
 			"ERROR ACCESS DENIED" : "Access denied. Please contact your administrator. <br/><br/>",
@@ -188,9 +189,7 @@
 
 		function deleteRoute(index) {
 			var route = ROUTES[index];
-
 			var params = `username=${USERNAME}&password=${PASSWORD}&client=${route.Client}&sourceip=${route.SourceIP}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
-
 			var xhr = new XMLHttpRequest();
 			var delErrorElement = document.getElementById("deleteRouteError");
 
@@ -218,7 +217,39 @@
 			}
 
 			xhr.send(params);
+			refresh();
+			return false;
+		}
 
+		function deleteUser(index) {
+			var user = USERS[index];
+			var params = `username=${USERNAME}&password=${PASSWORD}&user=${user}`;
+			var xhr = new XMLHttpRequest();
+			var delErrorElement = document.getElementById("deleteUserError");
+
+			xhr.open('POST', "/deleteUser", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					document.getElementById("addUserError").setAttribute("hidden", "true");
+
+					if (xhr.responseText == "OK") {
+						delErrorElement.setAttribute("hidden", "true");
+						return;
+					}
+
+					delErrorElement.removeAttribute("hidden");
+					if (!(xhr.responseText in map)) {
+						delErrorElement.innerHTML = "User delete failed. Please try again. <br/><br/>";
+						return;
+					}
+
+					delErrorElement.innerHTML = map[xhr.responseText];
+				}
+			}
+
+			xhr.send(params);
 			refresh();
 			return false;
 		}
@@ -256,6 +287,17 @@
 					</td>
 				</tr>`
 			$("#records").append(html);
+		}
+
+		function showUser(user, index) {
+			var html =
+				`<tr>
+					<td class="grey-field">${user}</td>
+					<td><div class="small-button" onclick="deleteUser(${index});">
+						<i class="fas fa-trash-alt"></i></div>
+					</td>
+				</tr>`
+			$("#users").append(html);
 		}
 
 		function deleteRecord(index) {
@@ -415,11 +457,61 @@
 			return false;
 		}
 
+		function addUser(form) {
+			var newusername = form.newusername.value;
+			var newpassword = form.newpassword.value;
+			var error = "";
+
+			if (newusername.length == 0) {
+				error += 'Username is required';
+			}
+			if (newpassword.length == 0) {
+				error += 'Password is required';
+			}
+
+			if (error) {
+				alert(error);
+				return false;
+			}
+
+			var params = `username=${USERNAME}&password=${PASSWORD}&newusername=${newusername}&newpassword=${newpassword}`;
+			var xhr = new XMLHttpRequest();
+			var addErrorElement =document.getElementById("addUserError");
+
+			xhr.open('POST', "/addUser", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					document.getElementById("deleteUserError").setAttribute("hidden", "true");
+
+					if (xhr.responseText == "OK") {
+						addErrorElement.setAttribute("hidden", "true");
+						return;
+					}
+
+					addErrorElement.removeAttribute("hidden");
+					if (!(xhr.responseText in map)) {
+						addErrorElement.innerHTML = "Add new user failed. Please contact the input data. <br/><br/>";
+						return;
+					}
+
+					addErrorElement.innerHTML = map[xhr.responseText];
+				}
+			}
+
+			xhr.send(params);
+			refresh();
+			return false;
+		}
+
 		function logoutForm(form) {
 			USERNAME = "";
 			PASSWORD = "";
 			document.getElementById("route-float").setAttribute("hidden", "true");
 			document.getElementById("record-float").setAttribute("hidden", "true");
+			document.getElementById("users-float").setAttribute("hidden", "true");
+			document.getElementById("userform").setAttribute("hidden", "true");
 			document.getElementById("mapform").setAttribute("hidden", "true");
 			document.getElementById("login-form").removeAttribute("hidden");
 			document.getElementById("logout-form").setAttribute("hidden", "true");
@@ -473,6 +565,31 @@
 			}
 		}
 
+		function fetchUsers() {
+			var params = `username=${USERNAME}&password=${PASSWORD}`;
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', "/listUsers", false)
+
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send(params);
+			console.log(xhr.responseText);
+			var users = JSON.parse(xhr.responseText);
+
+			USERS = users;
+
+			var node = document.getElementById("users");
+			while (node.hasChildNodes()) {
+				node.removeChild(node.lastChild);
+			}
+
+			if (USERS) {
+				for (var i=0; i<users.length; i++) {
+					showUser(users[i], i);
+				}
+			}
+		}
+
 		function getPorts() {
 			var xhr = new XMLHttpRequest();
 			xhr.open('GET', "/ports", false);
@@ -498,6 +615,7 @@
 			getPorts();
 			fetchRoutes();
 			fetchRecords();
+			fetchUsers();
 		}
 
 		function loginForm(form) {
@@ -523,6 +641,9 @@
 			http.onreadystatechange = function() {
 				if (http.readyState == 4 && http.status == 200) {
 					switch (http.responseText) {
+						case "ADMIN":
+							document.getElementById("users-float").removeAttribute("hidden");
+							document.getElementById("userform").removeAttribute("hidden");							
 						case "OK":
 							USERNAME = username;
 							PASSWORD = password;
@@ -597,6 +718,24 @@
 				</tbody>
 			</table>
 			<label hidden="true" class="errorMessage" id="deleteRecordError" for></label>
+		</div>
+
+		<form action="#" onsubmit="return addUser(this);" id="userform" hidden="true">
+			<label hidden="true" class="errorMessage" id="addUserError" for></label>
+			Add new TunnelBeast user:
+			<input type="text" id="new_username" name="newusername" placeholder="Username"/>
+			<input type="text" id="new_password" name="newpassword" placeholder="Password"/>
+			<button type="submit">Add</button>
+		</form>
+
+		<div class="white-boxed" id="users-float" hidden="true">
+			Current Users in TunnelBeast:
+			<br/>
+			<table>
+				<tbody id="users">
+				</tbody>
+			</table>
+			<label hidden="true" class="errorMessage" id="deleteUserError" for></label>
 		</div>
 
 		<form action="#" onsubmit="return logoutForm(this);" hidden="true" id="logout-form">
