@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/bahusvel/TunnelBeast/auth"
 
@@ -65,6 +67,46 @@ func FillStruct(target interface{}, data map[string]interface{}) error {
 	return nil
 }
 
+func parsePorts(ports []string) []string {
+	set := map[int]struct{}{}
+	for _, port := range ports {
+		switch strings.Count(port, "-") {
+		case 0:
+			p, err := strconv.Atoi(port)
+			if err != nil {
+				goto err
+			}
+			if p < 0 || p > 65536 {
+				goto err
+			}
+			set[p] = struct{}{}
+		case 1:
+			parts := strings.Split(port, "-")
+			from, errFrom := strconv.Atoi(parts[0])
+			to, errTo := strconv.Atoi(parts[1])
+			if errFrom != nil || errTo != nil {
+				goto err
+			}
+			if from < 0 || from > 65536 || to < 0 || to > 65536 || from > to {
+				goto err
+			}
+			for i := from; i < to; i++ {
+				set[i] = struct{}{}
+			}
+		default:
+			goto err
+		}
+		continue
+	err:
+		log.Fatal("Port definition is invalid ", port)
+	}
+	parsed := []string{}
+	for port := range set {
+		parsed = append(parsed, strconv.Itoa(port))
+	}
+	return parsed
+}
+
 func LoadConfig(filePath string, conf *Configuration) {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -79,7 +121,7 @@ func LoadConfig(filePath string, conf *Configuration) {
 	conf.DBpath = tmpConfig.DBpath
 	conf.Https = tmpConfig.Https
 	conf.Path = tmpConfig.Path
-	conf.Ports = tmpConfig.Ports
+	conf.Ports = parsePorts(tmpConfig.Ports)
 	conf.Domainname = tmpConfig.Domainname
 	switch tmpConfig.AuthMethod {
 	case "ldap":
