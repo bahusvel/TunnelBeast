@@ -1,6 +1,8 @@
-listendev: enp0s3
+listendev: eth0
 authmethod: test
-ports: [2222, 80, "443-445"]
+ports: [2222, "443-445"]
+https: none
+dbpath: ./test.db
 authprovider:
     Username: denis
     Password: denis

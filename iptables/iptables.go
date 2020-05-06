@@ -29,10 +29,6 @@ func Init(Interface string) error {
 	if err != nil {
 		return errors.New("Masquerade " + err.Error())
 	}
-	err = exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-i", INTERFACE, "-p", "tcp", "--destination-port", "666", "-j", "ACCEPT").Run()
-	if err != nil {
-		return errors.New("Port 666 " + err.Error())
-	}
 	return nil
 }
 

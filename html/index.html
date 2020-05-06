@@ -7,6 +7,7 @@
 
 	<style>
 		@import url(https://fonts.googleapis.com/css?family=Roboto:300);
+
 		@font-face {
 			font-family: 'Arvo';
 			src: url(ArvoBoldItalic.ttf);
@@ -154,7 +155,6 @@
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
 		}
-
 	</style>
 </head>
 
@@ -166,14 +166,14 @@
 		var RECORDS = [];
 
 		var map = {
-			"ERROR ACCESS DENIED" : "Access denied. Please contact your administrator. <br/><br/>",
-			"ERROR EXISTS" : "Routes exists. Please check your input data. <br/><br/>",
-			"ERROR PORT OCCUPIED" : "Port occupied. Please try another port. <br/><br/>",
-			"ERROR INPUT" : "Input error. Please check your input data. <br/><br/>",
-			"ERROR AUTH" : "Incorrect user ID or password. <br/><br/>",
-			"ERROR NOT EXIST" : "The route you try to delete is not exist.<br/><br/>",
-			"ERROR RECORD" : "Connection to Database error, try it again later. <br/><br/>",
-			"ERROR RECORD EXISTS" : "Record name conflict, try another name. <br/><br/>"
+			"ERROR ACCESS DENIED": "Access denied. Please contact your administrator. <br/><br/>",
+			"ERROR EXISTS": "Routes exists. Please check your input data. <br/><br/>",
+			"ERROR PORT OCCUPIED": "Port occupied. Please try another port. <br/><br/>",
+			"ERROR INPUT": "Input error. Please check your input data. <br/><br/>",
+			"ERROR AUTH": "Incorrect user ID or password. <br/><br/>",
+			"ERROR NOT EXIST": "The route you try to delete is not exist.<br/><br/>",
+			"ERROR RECORD": "Connection to Database error, try it again later. <br/><br/>",
+			"ERROR RECORD EXISTS": "Record name conflict, try another name. <br/><br/>"
 		};
 
 		function create(htmlStr) {
@@ -197,7 +197,7 @@
 			xhr.open('POST', "/delete", false);
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 
-			xhr.onreadystatechange = function() {
+			xhr.onreadystatechange = function () {
 				if (xhr.readyState == 4 && xhr.status == 200) {
 					document.getElementById("addRouteError").setAttribute("hidden", "true");
 
@@ -206,7 +206,7 @@
 						return;
 					}
 
-					if (!(xhr.responseText in map)){
+					if (!(xhr.responseText in map)) {
 						delErrorElement.removeAttribute("hidden");
 						delErrorElement.innerHTML = "Route delete failed. Please try again. <br/><br/>";
 						return;
@@ -267,14 +267,14 @@
 			xhr.open('POST', "/deleteRecord", false);
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 
-			xhr.onreadystatechange = function() {
+			xhr.onreadystatechange = function () {
 				if (xhr.readyState == 4 && xhr.status == 200) {
 					if (xhr.responseText == "OK") {
 						delErrorElement.setAttribute("hidden", "true");
 						return;
 					}
 
-					if (!(xhr.responseText in map)){
+					if (!(xhr.responseText in map)) {
 						delErrorElement.removeAttribute("hidden");
 						delErrorElement.innerHTML = "Record delete failed. Please try again. <br/><br/>";
 						return;
@@ -314,7 +314,7 @@
 			xhr.open('POST', "/add", false);
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 
-			xhr.onreadystatechange = function() {
+			xhr.onreadystatechange = function () {
 				if (xhr.readyState == 4 && xhr.status == 200) {
 					document.getElementById("deleteRouteError").setAttribute("hidden", "true");
 
@@ -323,7 +323,7 @@
 						return;
 					}
 
-					if (!(xhr.responseText in map)){
+					if (!(xhr.responseText in map)) {
 						addErrorElement.removeAttribute("hidden");
 						addErrorElement.innerHTML = "Route add failed. Please check the input data. <br/><br/>";
 						return;
@@ -349,7 +349,7 @@
 			xhr.open('POST', "/add", false);
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 
-			xhr.onreadystatechange = function() {
+			xhr.onreadystatechange = function () {
 				if (xhr.readyState == 4 && xhr.status == 200) {
 					document.getElementById("deleteRouteError").setAttribute("hidden", "true");
 
@@ -362,7 +362,7 @@
 					document.getElementById("map_internalip").value = record.DestinationIP;
 					document.getElementById("map_internalport").value = record.InternalPort;
 
-					if (!(xhr.responseText in map)){
+					if (!(xhr.responseText in map)) {
 						addErrorElement.innerHTML = "Active favorite route failed. Please try again. <br/><br/>";
 						return;
 					}
@@ -391,7 +391,7 @@
 			xhr.open('POST', "/addRecord", false);
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 
-			xhr.onreadystatechange = function() {
+			xhr.onreadystatechange = function () {
 				if (xhr.readyState == 4 && xhr.status == 200) {
 
 					if (xhr.responseText == "OK") {
@@ -399,7 +399,7 @@
 						return;
 					}
 
-					if (!(xhr.responseText in map)){
+					if (!(xhr.responseText in map)) {
 						delErrorElement.removeAttribute("hidden");
 						delErrorElement.innerHTML = "Route add failed. Please try again. <br/><br/>";
 						return;
@@ -466,17 +466,19 @@
 				node.removeChild(node.lastChild);
 			}
 
-			if ( RECORDS ) {
+			if (RECORDS) {
 				for (var i = 0; i < records.length; i++) {
-						showRecord(records[i], i);
+					showRecord(records[i], i);
 				}
 			}
 		}
 
 		function getPorts() {
+			var params = `username=${USERNAME}&password=${PASSWORD}`;
 			var xhr = new XMLHttpRequest();
-			xhr.open('GET', "/ports", false);
-			xhr.send();
+			xhr.open('POST', "/ports", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send(params);
 
 			console.log(xhr.responseText);
 
@@ -520,7 +522,7 @@
 			http.open("POST", url, true);
 			http.setRequestHeader("Content-type",
 				"application/x-www-form-urlencoded");
-			http.onreadystatechange = function() {
+			http.onreadystatechange = function () {
 				if (http.readyState == 4 && http.status == 200) {
 					switch (http.responseText) {
 						case "OK":
@@ -534,7 +536,7 @@
 							console.log("Auth success");
 							refresh();
 							break;
-					 	case "ERROR AUTH":
+						case "ERROR AUTH":
 							console.log("Auth failed");
 							document.getElementById("authFail").removeAttribute("hidden");
 							document.getElementById("authFail").innerHTML = map[http.responseText];
@@ -569,7 +571,7 @@
 
 		<div class="white-boxed" id="route-float" hidden="true">
 			Current Routes:
-			<br/>
+			<br />
 			<table>
 				<tbody id="routes">
 				</tbody>
@@ -579,10 +581,12 @@
 
 		<form action="#" onsubmit="return addRoute(this);" id="mapform" hidden="true">
 			<label hidden="true" class="errorMessage" id="addRouteError" for></label>
-			<input type="text" id="map_internalip" name="internalip" placeholder="Internal IP" title="Internal IP Address: X . X . X . X"
-				pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}$"/>
-			<input type="text" id="map_internalport" name="internalport" placeholder="Internal Port" title="Internal Port range: 0 ~ 65535"
-				pattern="^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$"/>
+			<input type="text" id="map_internalip" name="internalip" placeholder="Internal IP"
+				title="Internal IP Address: X . X . X . X"
+				pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}$" />
+			<input type="text" id="map_internalport" name="internalport" placeholder="Internal Port"
+				title="Internal Port range: 0 ~ 65535"
+				pattern="^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$" />
 			Select external port:
 			<select name="externalport" form="mapform" id="port-select">
 			</select>
@@ -591,7 +595,7 @@
 
 		<div class="white-boxed" id="record-float" hidden="true">
 			Your Favorite Routes:
-			<br/>
+			<br />
 			<table>
 				<tbody id="records">
 				</tbody>

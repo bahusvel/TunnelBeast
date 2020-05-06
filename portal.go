@@ -205,6 +205,21 @@ func ListPorts(w http.ResponseWriter, r *http.Request) {
 	log.Println("Port access", r.RemoteAddr)
 	w.Header().Set("Cache-Control", "no-cache")
 
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
 	sourceip := strings.Split(r.RemoteAddr, ":")[0]
 
 	var keys []string

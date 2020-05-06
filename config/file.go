@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -87,10 +88,10 @@ func parsePorts(ports []string) []string {
 			if errFrom != nil || errTo != nil {
 				goto err
 			}
-			if from < 0 || from > 65536 || to < 0 || to > 65536 || from > to {
+			if from < 0 || from > 65536 || to < 0 || to >= 65536 || from > to {
 				goto err
 			}
-			for i := from; i < to; i++ {
+			for i := from; i <= to; i++ {
 				set[i] = struct{}{}
 			}
 		default:
@@ -100,11 +101,16 @@ func parsePorts(ports []string) []string {
 	err:
 		log.Fatal("Port definition is invalid ", port)
 	}
-	parsed := []string{}
+	portInts := []int{}
 	for port := range set {
-		parsed = append(parsed, strconv.Itoa(port))
+		portInts = append(portInts, port)
 	}
-	return parsed
+	sort.Ints(portInts)
+	portStrings := []string{}
+	for _, port := range portInts {
+		portStrings = append(portStrings, strconv.Itoa(port))
+	}
+	return portStrings
 }
 
 func LoadConfig(filePath string, conf *Configuration) {
