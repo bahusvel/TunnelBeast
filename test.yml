@@ -1,4 +1,3 @@
-listendev: eth0
 authmethod: test
 ports: [2222, "443-445"]
 https: none

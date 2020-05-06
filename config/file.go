@@ -19,7 +19,6 @@ type Configuration struct {
 	DBpath       string
 	Https        string
 	Path         string
-	ListenDev    string
 	Ports        []string
 	Domainname   string
 	AuthProvider auth.AuthProvider
@@ -29,14 +28,13 @@ type configuration struct {
 	DBpath       string
 	Https        string
 	Path         string
-	ListenDev    string
 	AuthMethod   string
 	Ports        []string
 	Domainname   string
 	AuthProvider map[string]interface{}
 }
 
-func SetField(obj interface{}, name string, value interface{}) error {
+func setField(obj interface{}, name string, value interface{}) error {
 	structValue := reflect.ValueOf(obj).Elem()
 	structFieldValue := structValue.FieldByName(name)
 
@@ -58,9 +56,9 @@ func SetField(obj interface{}, name string, value interface{}) error {
 	return nil
 }
 
-func FillStruct(target interface{}, data map[string]interface{}) error {
+func fillStruct(target interface{}, data map[string]interface{}) error {
 	for k, v := range data {
-		err := SetField(target, k, v)
+		err := setField(target, k, v)
 		if err != nil {
 			return err
 		}
@@ -123,7 +121,6 @@ func LoadConfig(filePath string, conf *Configuration) {
 	if err != nil {
 		log.Fatal("Failed reading config file", err)
 	}
-	conf.ListenDev = tmpConfig.ListenDev
 	conf.DBpath = tmpConfig.DBpath
 	conf.Https = tmpConfig.Https
 	conf.Path = tmpConfig.Path
@@ -132,11 +129,11 @@ func LoadConfig(filePath string, conf *Configuration) {
 	switch tmpConfig.AuthMethod {
 	case "ldap":
 		tmpProvider := auth.LDAPAuth{}
-		FillStruct(&tmpProvider, tmpConfig.AuthProvider)
+		fillStruct(&tmpProvider, tmpConfig.AuthProvider)
 		conf.AuthProvider = tmpProvider
 	case "test":
 		tmpProvider := auth.TestAuth{}
-		FillStruct(&tmpProvider, tmpConfig.AuthProvider)
+		fillStruct(&tmpProvider, tmpConfig.AuthProvider)
 		conf.AuthProvider = tmpProvider
 	}
 }

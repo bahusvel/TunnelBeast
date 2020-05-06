@@ -387,7 +387,7 @@ func main() {
 	authProvider = conf.AuthProvider
 	authProvider.Init()
 
-	err := iptables.Init(conf.ListenDev)
+	err := iptables.Init()
 	if err != nil {
 		log.Println("Error initializing iptables", err)
 		return
