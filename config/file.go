@@ -135,5 +135,9 @@ func LoadConfig(filePath string, conf *Configuration) {
 		tmpProvider := auth.TestAuth{}
 		fillStruct(&tmpProvider, tmpConfig.AuthProvider)
 		conf.AuthProvider = tmpProvider
+	case "local":
+		tmpProvider := auth.LocalAuth{}
+		fillStruct(&tmpProvider, tmpConfig.AuthProvider)
+		conf.AuthProvider = tmpProvider
 	}
 }

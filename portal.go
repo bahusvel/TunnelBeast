@@ -261,6 +261,11 @@ func Authenticate(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ERROR AUTH"))
 		return
 	}
+
+	if authProvider.CheckAdminPanel(username, password) {
+		w.Write([]byte("ADMIN"))
+		return
+	}
 	w.Write([]byte("OK"))
 }
 
@@ -303,6 +308,47 @@ func AddRecord(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+func AddUser(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	newusername := r.PostForm.Get("newusername")
+	newpassword := r.PostForm.Get("newpassword")
+
+	if username == "" || password == "" || newusername == "" || newpassword == "" {
+		w.Write([]byte("ERROR INPUT"))
+		return
+	}
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	if !authProvider.CheckAdminPanel(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	key := "users/" + newusername + "/" + newpassword
+	value := boltdb.RecordValue{}
+
+	err = boltdb.AddRecord(key, value)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	log.Println("new user added: ", newusername, "/", newpassword)
+	w.Write([]byte("OK"))
+}
+
 func DeleteRecord(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -341,6 +387,46 @@ func DeleteRecord(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	user := r.PostForm.Get("user")
+
+	if username == "" || password == "" || user == "" {
+		w.Write([]byte("ERROR INPUT"))
+		return
+	}
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	if !authProvider.CheckAdminPanel(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	key := "users/" + user
+
+	err = boltdb.DeleteRecord(key)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	log.Println("user deleted: ", user)
+	w.Write([]byte("OK"))
+}
+
 func ListRecords(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -365,6 +451,42 @@ func ListRecords(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data, err := json.Marshal(values)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.Write(data)
+}
+
+func ListUsers(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	if !authProvider.CheckAdminPanel(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	keys := make([]string, 0)
+	keys, err = boltdb.ListUsers()
+	if err != nil {
+		log.Fatal(err)
+		w.Write([]byte("ERROR LISTUSERS"))
+	}
+
+	data, err := json.Marshal(keys)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -414,6 +536,9 @@ func main() {
 	mux.HandleFunc("/addRecord", AddRecord)
 	mux.HandleFunc("/deleteRecord", DeleteRecord)
 	mux.HandleFunc("/listRecords", ListRecords)
+	mux.HandleFunc("/addUser", AddUser)
+	mux.HandleFunc("/deleteUser", DeleteUser)
+	mux.HandleFunc("/listUsers", ListUsers)
 
 	port80 := &http.Server{}
 

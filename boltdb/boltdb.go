@@ -16,6 +16,10 @@ type RecordValue struct {
 	InternalPort  string
 }
 
+type UserInfo struct {
+	Password string //hashed
+}
+
 var (
 	db *bolt.DB
 
@@ -23,6 +27,7 @@ var (
 	ErrBucketNotCreated = errors.New("Error Bucket not created")
 	ErrBucketNotFound   = errors.New("Error Bucket not found")
 	ErrExists           = errors.New("ERROR RECORD EXISTS")
+	ErrNotExists        = errors.New("ERROR RECORD NOT EXISTS")
 )
 
 func Init(Path string) error {
@@ -70,6 +75,25 @@ func DeleteRecord(key string) error {
 	})
 }
 
+func GetRecord(key string) (value RecordValue, err error) {
+	return value, db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(BUCKETNAME))
+		if bucket == nil {
+			return ErrBucketNotFound
+		}
+		v := bucket.Get([]byte(key))
+		if v == nil {
+			return ErrNotExists
+		}
+		err = json.Unmarshal(v, &value)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		return nil
+	})
+}
+
 func ListRecords(username string) (values []RecordValue, err error) {
 	return values, db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(BUCKETNAME))
@@ -78,7 +102,7 @@ func ListRecords(username string) (values []RecordValue, err error) {
 		}
 
 		cursor := bucket.Cursor()
-		prefix := []byte(username)
+		prefix := []byte(username + "/favorite/")
 
 		for k, v := cursor.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = cursor.Next() {
 			var value RecordValue
@@ -87,7 +111,45 @@ func ListRecords(username string) (values []RecordValue, err error) {
 				log.Println(err)
 				return err
 			}
+
 			values = append(values, value)
+		}
+		return nil
+	})
+}
+
+func AddUser(username string, password string) error {
+
+	return nil
+}
+
+func UpdateUser(username string, password string) error {
+	return nil
+}
+
+func DeleteUser(username string, password string) error {
+	return nil
+}
+
+func ListUsers() (users []string, err error) {
+	return users, db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(BUCKETNAME))
+		if bucket == nil {
+			return ErrBucketNotFound
+		}
+
+		cursor := bucket.Cursor()
+		prefix := []byte("users/")
+
+		for k, _ := cursor.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = cursor.Next() {
+			log.Println(string(k), ":", len(prefix))
+			user := string(k)[len(prefix):]
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
+			users = append(users, user)
 		}
 		return nil
 	})

@@ -2,16 +2,17 @@ package auth
 
 import (
 	"fmt"
-	"gopkg.in/ldap.v2"
 	"log"
 	"net"
+
+	"gopkg.in/ldap.v2"
 )
 
 type LDAPAuth struct {
 	LDAPAddr           string
 	DCString           string
 	IPAddressAttribute string
-	UserRDN 		   string
+	UserRDN            string
 }
 
 func (this LDAPAuth) Init() {
@@ -22,7 +23,7 @@ func (this LDAPAuth) queryIPAddress(LdapClient *ldap.Conn, username string) ([]s
 
 	searchRequest := ldap.NewSearchRequest(fmt.Sprintf("%s=%s,%s", this.UserRDN, username, this.DCString),
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		"(&(objectClass=*))",   // The filter to apply
+		"(&(objectClass=*))",                    // The filter to apply
 		[]string{"dn", this.IPAddressAttribute}, // A list attributes to retrieve
 		nil,
 	)
@@ -99,4 +100,8 @@ func (this LDAPAuth) Authenticate(username string, password string) bool {
 		return false
 	}
 	return true
+}
+
+func (this LDAPAuth) CheckAdminPanel(Username string, Password string) bool {
+	return false
 }
