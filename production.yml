@@ -1,5 +1,3 @@
-listendev: enp0s3
-
 # Authenticationg methods: test, local, ldap
 #   test:       for test purpose only
 #   local:      use local bolt DB to authenticate users, users can be managered 

@@ -269,7 +269,7 @@ func Authenticate(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func AddRecord(w http.ResponseWriter, r *http.Request) {
+func AddFavorite(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
@@ -282,7 +282,7 @@ func AddRecord(w http.ResponseWriter, r *http.Request) {
 	internalip := r.PostForm.Get("internalip")
 	internalport := r.PostForm.Get("internalport")
 	externalport := r.PostForm.Get("externalport")
-	recordname := r.PostForm.Get("recordname")
+	favoritename := r.PostForm.Get("favoritename")
 
 	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" {
 		w.Write([]byte("ERROR INPUT"))
@@ -294,17 +294,17 @@ func AddRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := username + "/favorite/" + recordname
-	value := boltdb.RecordValue{DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport, RecordName: recordname}
+	key := username + "/favorite/" + favoritename
+	value := boltdb.Favourite{DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport, Name: favoritename}
 
-	err = boltdb.AddRecord(key, value)
+	err = boltdb.AddFavourite(key, value)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	log.Println("favorite route added: ", username, recordname, externalport, internalip, internalport)
+	log.Println("favorite route added: ", username, favoritename, externalport, internalip, internalport)
 	w.Write([]byte("OK"))
 }
 
@@ -336,9 +336,9 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := "users/" + newusername + "/" + newpassword
-	value := boltdb.RecordValue{}
+	value := boltdb.Favourite{}
 
-	err = boltdb.AddRecord(key, value)
+	err = boltdb.AddFavourite(key, value)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
@@ -349,7 +349,7 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func DeleteRecord(w http.ResponseWriter, r *http.Request) {
+func DeleteFavorite(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
@@ -362,9 +362,9 @@ func DeleteRecord(w http.ResponseWriter, r *http.Request) {
 	internalip := r.PostForm.Get("internalip")
 	internalport := r.PostForm.Get("internalport")
 	externalport := r.PostForm.Get("externalport")
-	recordname := r.PostForm.Get("recordname")
+	favoritename := r.PostForm.Get("favoritename")
 
-	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" || recordname == "" {
+	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" || favoritename == "" {
 		w.Write([]byte("ERROR INPUT"))
 		return
 	}
@@ -374,16 +374,16 @@ func DeleteRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := username + "/favorite/" + recordname
+	key := username + "/favorite/" + favoritename
 
-	err = boltdb.DeleteRecord(key)
+	err = boltdb.DeleteFavourite(key)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	log.Println("favorite route deleted: ", username, recordname, externalport, internalip, internalport)
+	log.Println("favorite route deleted: ", username, favoritename, externalport, internalip, internalport)
 	w.Write([]byte("OK"))
 }
 
@@ -416,7 +416,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	key := "users/" + user
 
-	err = boltdb.DeleteRecord(key)
+	err = boltdb.DeleteFavourite(key)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
@@ -427,7 +427,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func ListRecords(w http.ResponseWriter, r *http.Request) {
+func ListFavorites(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
@@ -443,11 +443,11 @@ func ListRecords(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	values := make([]boltdb.RecordValue, 0)
-	values, err = boltdb.ListRecords(username)
+	values := make([]boltdb.Favourite, 0)
+	values, err = boltdb.ListFavourites(username)
 	if err != nil {
 		log.Fatal(err)
-		w.Write([]byte("ERROR RECORD"))
+		w.Write([]byte("ERROR DB"))
 	}
 
 	data, err := json.Marshal(values)
@@ -533,9 +533,9 @@ func main() {
 	mux.HandleFunc("/ports", ListPorts)
 	mux.HandleFunc("/auth", Authenticate)
 	mux.HandleFunc("/list", ListRoutes)
-	mux.HandleFunc("/addRecord", AddRecord)
-	mux.HandleFunc("/deleteRecord", DeleteRecord)
-	mux.HandleFunc("/listRecords", ListRecords)
+	mux.HandleFunc("/addFavorite", AddFavorite)
+	mux.HandleFunc("/deleteFavorite", DeleteFavorite)
+	mux.HandleFunc("/listFavorites", ListFavorites)
 	mux.HandleFunc("/addUser", AddUser)
 	mux.HandleFunc("/deleteUser", DeleteUser)
 	mux.HandleFunc("/listUsers", ListUsers)

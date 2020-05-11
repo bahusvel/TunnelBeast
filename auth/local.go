@@ -17,7 +17,7 @@ func (this LocalAuth) Authenticate(Username string, Password string) bool {
 	}
 
 	key := "users/" + Username + "/" + Password
-	_, err := boltdb.GetRecord(key)
+	_, err := boltdb.GetFavourite(key)
 	if err == nil {
 		return true
 	}

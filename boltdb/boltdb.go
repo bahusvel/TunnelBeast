@@ -9,8 +9,8 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-type RecordValue struct {
-	RecordName    string
+type Favourite struct {
+	Name          string
 	DestinationIP string
 	ExternalPort  string
 	InternalPort  string
@@ -26,8 +26,8 @@ var (
 	BUCKETNAME          = "userRoutes"
 	ErrBucketNotCreated = errors.New("Error Bucket not created")
 	ErrBucketNotFound   = errors.New("Error Bucket not found")
-	ErrExists           = errors.New("ERROR RECORD EXISTS")
-	ErrNotExists        = errors.New("ERROR RECORD NOT EXISTS")
+	ErrExists           = errors.New("ERROR EXISTS")
+	ErrNotExists        = errors.New("ERROR NOT EXISTS")
 )
 
 func Init(Path string) error {
@@ -49,7 +49,7 @@ func Init(Path string) error {
 	return nil
 }
 
-func AddRecord(key string, value RecordValue) error {
+func AddFavourite(key string, value Favourite) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(BUCKETNAME))
 		v := bucket.Get([]byte(key))
@@ -65,7 +65,7 @@ func AddRecord(key string, value RecordValue) error {
 	})
 }
 
-func DeleteRecord(key string) error {
+func DeleteFavourite(key string) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(BUCKETNAME))
 		if bucket == nil {
@@ -75,7 +75,7 @@ func DeleteRecord(key string) error {
 	})
 }
 
-func GetRecord(key string) (value RecordValue, err error) {
+func GetFavourite(key string) (value Favourite, err error) {
 	return value, db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(BUCKETNAME))
 		if bucket == nil {
@@ -94,7 +94,7 @@ func GetRecord(key string) (value RecordValue, err error) {
 	})
 }
 
-func ListRecords(username string) (values []RecordValue, err error) {
+func ListFavourites(username string) (values []Favourite, err error) {
 	return values, db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(BUCKETNAME))
 		if bucket == nil {
@@ -105,7 +105,7 @@ func ListRecords(username string) (values []RecordValue, err error) {
 		prefix := []byte(username + "/favorite/")
 
 		for k, v := cursor.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = cursor.Next() {
-			var value RecordValue
+			var value Favourite
 			err := json.Unmarshal(v, &value)
 			if err != nil {
 				log.Println(err)

@@ -2,13 +2,14 @@ package auth
 
 import (
 	"fmt"
-	"gopkg.in/ldap.v2"
-	"testing"
 	"log"
+	"testing"
+
+	"gopkg.in/ldap.v2"
 )
 
 func TestIPFromLDAP(t *testing.T) {
-	this := LDAPAuth{LDAPAddr: "ldap.unitecloud.net:389", DCString: "dc=unitecloud,dc=net", IPAddressAttribute: "telephoneNumber", UserObjectClass: "*"}
+	this := LDAPAuth{LDAPAddr: "ldap.unitecloud.net:389", DCString: "dc=unitecloud,dc=net", IPAddressAttribute: "ipHostNumber"}
 
 	l, err := ldap.Dial("tcp", this.LDAPAddr)
 	if err != nil {
