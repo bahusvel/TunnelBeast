@@ -1,6 +1,10 @@
 package auth
 
-import "github.com/bahusvel/TunnelBeast/boltdb"
+import (
+	"log"
+
+	"github.com/bahusvel/TunnelBeast/boltdb"
+)
 
 type LocalAuth struct {
 	Username string
@@ -8,7 +12,11 @@ type LocalAuth struct {
 }
 
 func (this LocalAuth) Init() {
-
+	//add admin user to DB
+	err := boltdb.AddUser(this.Username, this.Password)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func (this LocalAuth) Authenticate(Username string, Password string) bool {
@@ -16,13 +24,7 @@ func (this LocalAuth) Authenticate(Username string, Password string) bool {
 		return true
 	}
 
-	key := "users/" + Username + "/" + Password
-	_, err := boltdb.GetFavourite(key)
-	if err == nil {
-		return true
-	}
-
-	return false
+	return boltdb.Authenticate(Username, Password)
 }
 
 func (this LocalAuth) CheckDestinationIP(dstip string, Username string, Password string) bool {

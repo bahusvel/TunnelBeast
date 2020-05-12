@@ -295,9 +295,9 @@ func AddFavorite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := username + "/favorite/" + favoritename
-	value := boltdb.Favourite{DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport, Name: favoritename}
+	value := boltdb.Favorite{DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport, Name: favoritename}
 
-	err = boltdb.AddFavourite(key, value)
+	err = boltdb.AddFavorite(key, value)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
@@ -336,9 +336,9 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := "users/" + newusername + "/" + newpassword
-	value := boltdb.Favourite{}
+	value := boltdb.Favorite{}
 
-	err = boltdb.AddFavourite(key, value)
+	err = boltdb.AddFavorite(key, value)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
@@ -376,7 +376,7 @@ func DeleteFavorite(w http.ResponseWriter, r *http.Request) {
 
 	key := username + "/favorite/" + favoritename
 
-	err = boltdb.DeleteFavourite(key)
+	err = boltdb.DeleteFavorite(key, favoritename)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
@@ -416,7 +416,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	key := "users/" + user
 
-	err = boltdb.DeleteFavourite(key)
+	err = boltdb.DeleteFavorite(key, user)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
@@ -443,8 +443,8 @@ func ListFavorites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	values := make([]boltdb.Favourite, 0)
-	values, err = boltdb.ListFavourites(username)
+	values := make([]boltdb.Favorite, 0)
+	values, err = boltdb.ListFavorites(username)
 	if err != nil {
 		log.Fatal(err)
 		w.Write([]byte("ERROR DB"))
