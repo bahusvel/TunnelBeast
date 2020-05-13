@@ -249,7 +249,7 @@
 			}
 
 			xhr.send(params);
-			refresh();
+			fetchUsers();
 			return false;
 		}
 
@@ -273,7 +273,7 @@
 			var html =
 				`<tr>
 					<td class="name-field">
-						${favorite.FAVORITENAME}
+						${favorite.FavoriteName}
 					</td>
 				 	<td class="grey-field">
 						${favorite.ExternalPort} -> ${favorite.DestinationIP}:${favorite.InternalPort}
@@ -301,7 +301,7 @@
 
 		function deleteFavorite(index) {
 			var favorite = FAVORITES[index];
-			var params = `favoritename=${favorite.FAVORITENAME}&username=${USERNAME}&password=${PASSWORD}&internalip=${favorite.DestinationIP}&externalport=${favorite.ExternalPort}&internalport=${favorite.InternalPort}`;
+			var params = `favoritename=${favorite.FavoriteName}&username=${USERNAME}&password=${PASSWORD}&internalip=${favorite.DestinationIP}&externalport=${favorite.ExternalPort}&internalport=${favorite.InternalPort}`;
 			var xhr = new XMLHttpRequest();
 			var delErrorElement = document.getElementById("deleteFavoriteError");
 
@@ -500,7 +500,7 @@
 			}
 
 			xhr.send(params);
-			refresh();
+			fetchUsers();
 			return false;
 		}
 
@@ -572,11 +572,12 @@
 
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 			xhr.send(params);
-			console.log(xhr.responseText);
+			if (xhr.responseText in map) {
+				return
+			}
+
 			var users = JSON.parse(xhr.responseText);
-
 			USERS = users;
-
 			var node = document.getElementById("users");
 			while (node.hasChildNodes()) {
 				node.removeChild(node.lastChild);
@@ -616,13 +617,13 @@
 			getPorts();
 			fetchRoutes();
 			fetchFavorites();
-			fetchUsers();
 		}
 
 		function loginForm(form) {
 			var error = "";
 			var username = form.username.value;
 			var password = form.password.value;
+
 			if (username.length == 0) {
 				error += 'Username is required\n';
 			}
@@ -643,8 +644,11 @@
 				if (http.readyState == 4 && http.status == 200) {
 					switch (http.responseText) {
 						case "ADMIN":
+							USERNAME = username;
+							PASSWORD = password;
 							document.getElementById("users-float").removeAttribute("hidden");
-							document.getElementById("userform").removeAttribute("hidden");							
+							document.getElementById("userform").removeAttribute("hidden");
+							fetchUsers();							
 						case "OK":
 							USERNAME = username;
 							PASSWORD = password;

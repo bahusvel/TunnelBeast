@@ -14,6 +14,9 @@ type LocalAuth struct {
 func (this LocalAuth) Init() {
 	//add admin user to DB
 	err := boltdb.AddUser(this.Username, this.Password)
+	if err == boltdb.ErrExists {
+		return
+	}
 	if err != nil {
 		log.Fatalln(err)
 	}

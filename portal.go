@@ -43,7 +43,7 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 	internalport := r.PostForm.Get("internalport")
 	externalport := r.PostForm.Get("externalport")
 
-	log.Println(username, password, internalip, internalport, externalport)
+	log.Println(username, internalip, internalport, externalport)
 	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" {
 		w.Write([]byte("ERROR INPUT"))
 		return
@@ -294,10 +294,10 @@ func AddFavorite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := username + "/favorite/" + favoritename
-	value := boltdb.Favorite{DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport, Name: favoritename}
+	key := username
+	favorite := boltdb.Favorite{DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport, FavoriteName: favoritename}
 
-	err = boltdb.AddFavorite(key, value)
+	err = boltdb.AddFavorite(key, favorite)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
@@ -335,10 +335,7 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := "users/" + newusername + "/" + newpassword
-	value := boltdb.Favorite{}
-
-	err = boltdb.AddFavorite(key, value)
+	err = boltdb.AddUser(newusername, newpassword)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
@@ -374,7 +371,7 @@ func DeleteFavorite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := username + "/favorite/" + favoritename
+	key := username
 
 	err = boltdb.DeleteFavorite(key, favoritename)
 	if err != nil {
@@ -414,9 +411,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := "users/" + user
-
-	err = boltdb.DeleteFavorite(key, user)
+	err = boltdb.DeleteUser(user)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
@@ -506,18 +501,18 @@ func main() {
 	config.LoadConfig(os.Args[1], &conf)
 	log.Printf("%+v\n", conf)
 
+	err := boltdb.Init(conf.DBpath)
+	if err != nil {
+		log.Println("Error open boltdb", err)
+	}
+
 	authProvider = conf.AuthProvider
 	authProvider.Init()
 
-	err := iptables.Init()
+	err = iptables.Init()
 	if err != nil {
 		log.Println("Error initializing iptables", err)
 		return
-	}
-
-	err = boltdb.Init(conf.DBpath)
-	if err != nil {
-		log.Println("Error open boltdb", err)
 	}
 
 	certManager := autocert.Manager{

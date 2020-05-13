@@ -1,6 +1,8 @@
 package boltdb
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"log"
@@ -9,7 +11,7 @@ import (
 )
 
 type Favorite struct {
-	Name          string
+	FavoriteName  string
 	DestinationIP string
 	ExternalPort  string
 	InternalPort  string
@@ -53,15 +55,20 @@ func AddFavorite(username string, favorite Favorite) error {
 	var user User
 	user, err := getUser(username)
 	if err != nil && err != ErrNotExists {
+		//ErrNotExists happens if LDAP auth used
 		log.Println(err)
 		return err
 	}
 
-	if _, ok := user.Favorites[favorite.Name]; ok {
+	if _, ok := user.Favorites[favorite.FavoriteName]; ok {
 		return ErrExists
 	}
 
-	user.Favorites[favorite.Name] = favorite
+	if user.Favorites == nil {
+		user.Favorites = make(map[string]Favorite)
+	}
+
+	user.Favorites[favorite.FavoriteName] = favorite
 
 	return saveUser(username, user)
 }
@@ -121,9 +128,10 @@ func ListFavorites(username string) (values []Favorite, err error) {
 }
 
 func AddUser(username string, password string) error {
-	user := new(User)
-	user.Favorites = make(map[string]Favorite)
-	user.Password = password
+	var user User
+	rawHash := sha256.Sum256([]byte(password))
+	hashpwd := hex.EncodeToString(rawHash[:])
+	user.Password = hashpwd
 
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(BUCKETNAME))
@@ -147,12 +155,16 @@ func AddUser(username string, password string) error {
 }
 
 func Authenticate(username string, password string) bool {
+	var user User
 	user, err := getUser(username)
 	if err != nil {
 		return false
 	}
 
-	if password != user.Password {
+	rawHash := sha256.Sum256([]byte(password))
+	hashpwd := hex.EncodeToString(rawHash[:])
+
+	if hashpwd != user.Password {
 		return false
 	}
 
@@ -160,6 +172,7 @@ func Authenticate(username string, password string) bool {
 }
 
 func UpdateUserPassword(username string, password string) error {
+	var user User
 	user, err := getUser(username)
 	if err != nil {
 		log.Println(err)
@@ -226,6 +239,10 @@ func getUser(username string) (user User, err error) {
 			return err
 		}
 
+		if user.Favorites == nil {
+			user.Favorites = make(map[string]Favorite)
+		}
+
 		return nil
 	})
 }
@@ -241,6 +258,10 @@ func saveUser(username string, user User) error {
 		if err != nil {
 			log.Println(err)
 			return err
+		}
+
+		if user.Favorites == nil {
+			user.Favorites = make(map[string]Favorite)
 		}
 
 		return bucket.Put([]byte(username), value)
