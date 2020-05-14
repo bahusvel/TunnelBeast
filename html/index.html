@@ -269,7 +269,7 @@
 			$("#routes").append(html);
 		}
 
-		function showFavorite(favorite, index) {
+		function showFavorite(favorite, index, color) {
 			var html =
 				`<tr>
 					<td class="name-field">
@@ -281,7 +281,7 @@
 					<td><div class="small-button" onclick="deleteFavorite(${index});">
 						<i class="fas fa-trash-alt"></i></div>
 					</td>
-					<td><div class="small-button" onclick="useFavorite(${index});">
+					<td><div style="color: ${color};" class="small-button" onclick="useFavorite(${index});">
 						<i class="fas fa-plus-circle"></i></div>
 					</td>
 				</tr>`
@@ -304,7 +304,10 @@
 			var params = `favoritename=${favorite.FavoriteName}&username=${USERNAME}&password=${PASSWORD}&internalip=${favorite.DestinationIP}&externalport=${favorite.ExternalPort}&internalport=${favorite.InternalPort}`;
 			var xhr = new XMLHttpRequest();
 			var delErrorElement = document.getElementById("deleteFavoriteError");
-
+			
+			if (!confirm("Are you sure you wish to delete this favorite?")) {
+				return false;
+			}
 			xhr.open('POST', "/deleteFavorite", false);
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 
@@ -559,9 +562,31 @@
 
 			if (FAVORITES) {
 				for (var i = 0; i < favorites.length; i++) {
-					showFavorite(favorites[i], i);
+					var color = "White";
+					if (usedFavorite(favorites[i])) {
+						color = "Grey";
+					}
+					showFavorite(favorites[i], i, color);
 				}
 			}
+		}
+
+		function usedFavorite(favorite) {
+			for (var i=0; i<ROUTES.length; i++) {
+				var route = ROUTES[i];
+				if (route.ExternalPort != favorite.ExternalPort) {
+					continue;
+				}
+				if (route.DestinationIP != favorite.DestinationIP) {
+					continue;
+				}
+				if (route.InternalPort != favorite.InternalPort) {
+					continue;
+				}
+
+				return true;
+			}
+			return false;
 		}
 
 		function fetchUsers() {
