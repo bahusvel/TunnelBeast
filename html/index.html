@@ -72,6 +72,42 @@
 			font-size: 14px;
 		}
 
+		.small-button {
+			font-family: "Roboto", sans-serif;
+			text-transform: uppercase;
+			outline: 0;
+			background: #4CAF50;
+			width: 18px;
+			border: 0;
+			margin-left: 2px;
+			padding: 8px;
+			color: #FFFFFF;
+			font-size: 14px;
+			-webkit-transition: all 0.3 ease;
+			transition: all 0.3 ease;
+			cursor: pointer;
+			display: inline-block;
+			text-align: center;
+		}
+
+		.unclickable {
+			font-family: "Roboto", sans-serif;
+			text-transform: uppercase;
+			outline: 0;
+			width: 18px;
+			border: 0;
+			margin-left: 2px;
+			padding: 8px;
+			color: #FFFFFF;
+			font-size: 14px;
+			-webkit-transition: all 0.3 ease;
+			transition: all 0.3 ease;
+			display: inline-block;
+			text-align: center;
+			background-color: #808080;
+			pointer-events: none;
+		}
+
 		form {
 			position: relative;
 			z-index: 1;
@@ -124,24 +160,6 @@
 			-webkit-transition: all 0.3 ease;
 			transition: all 0.3 ease;
 			cursor: pointer;
-		}
-
-		.small-button {
-			font-family: "Roboto", sans-serif;
-			text-transform: uppercase;
-			outline: 0;
-			background: #4CAF50;
-			width: 18px;
-			border: 0;
-			margin-left: 2px;
-			padding: 8px;
-			color: #FFFFFF;
-			font-size: 14px;
-			-webkit-transition: all 0.3 ease;
-			transition: all 0.3 ease;
-			cursor: pointer;
-			display: inline-block;
-			text-align: center;
 		}
 
 		body {
@@ -269,7 +287,7 @@
 			$("#routes").append(html);
 		}
 
-		function showFavorite(favorite, index, color) {
+		function showFavorite(favorite, index, btnAttr) {
 			var html =
 				`<tr>
 					<td class="name-field">
@@ -281,7 +299,7 @@
 					<td><div class="small-button" onclick="deleteFavorite(${index});">
 						<i class="fas fa-trash-alt"></i></div>
 					</td>
-					<td><div style="color: ${color};" class="small-button" onclick="useFavorite(${index});">
+					<td><div class="${btnAttr}" onclick="useFavorite(${index});">
 						<i class="fas fa-plus-circle"></i></div>
 					</td>
 				</tr>`
@@ -562,11 +580,11 @@
 
 			if (FAVORITES) {
 				for (var i = 0; i < favorites.length; i++) {
-					var color = "White";
+					var btnAttr = "small-button";
 					if (usedFavorite(favorites[i])) {
-						color = "Grey";
+						btnAttr = "unclickable";
 					}
-					showFavorite(favorites[i], i, color);
+					showFavorite(favorites[i], i, btnAttr);
 				}
 			}
 		}
