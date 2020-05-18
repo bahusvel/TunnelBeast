@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"sort"
 
 	"github.com/boltdb/bolt"
 )
@@ -120,8 +121,15 @@ func ListFavorites(username string) (values []Favorite, err error) {
 		return
 	}
 
-	for _, v := range user.Favorites {
-		values = append(values, v)
+	keys := make([]string, 0)
+	for k, _ := range user.Favorites {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		values = append(values, user.Favorites[k])
 	}
 
 	return

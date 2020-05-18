@@ -206,7 +206,7 @@
 
 		function deleteRoute(index) {
 			var route = ROUTES[index];
-			var params = `username=${USERNAME}&password=${PASSWORD}&client=${route.Client}&sourceip=${route.SourceIP}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
+			var params = `username=${USERNAME}&password=${PASSWORD}&sourceip=${route.SourceIP}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
 			var xhr = new XMLHttpRequest();
 			var delErrorElement = document.getElementById("deleteRouteError");
 
@@ -271,9 +271,12 @@
 			return false;
 		}
 
-		function showRoute(route, index) {
+		function showRoute(route, index, favoritename) {
 			var html =
 				`<tr>
+					<td class="name-field">
+						${favoritename}
+					</td>
 					<td class="grey-field">
 						${route.SourceIP} -> ${route.ExternalPort}:${route.DestinationIP}:${route.InternalPort}
 					</td>
@@ -550,15 +553,6 @@
 			var routes = JSON.parse(xhr.responseText);
 
 			ROUTES = routes;
-
-			var node = document.getElementById("routes");
-			while (node.hasChildNodes()) {
-				node.removeChild(node.lastChild);
-			}
-
-			for (var i = 0; i < routes.length; i++) {
-				showRoute(routes[i], i);
-			}
 		}
 
 		function fetchFavorites() {
@@ -572,12 +566,14 @@
 			var favorites = JSON.parse(xhr.responseText);
 
 			FAVORITES = favorites;
+		}
 
+		function show() {
 			var node = document.getElementById("favorites");
 			while (node.hasChildNodes()) {
 				node.removeChild(node.lastChild);
 			}
-
+			var favorites = FAVORITES;
 			if (FAVORITES) {
 				for (var i = 0; i < favorites.length; i++) {
 					var btnAttr = "small-button";
@@ -587,6 +583,18 @@
 					showFavorite(favorites[i], i, btnAttr);
 				}
 			}
+
+			var node = document.getElementById("routes");
+			while (node.hasChildNodes()) {
+				node.removeChild(node.lastChild);
+			}
+
+			var routes = ROUTES;
+			routes.sort(function(a, b){return (a.FavoriteName>b.FavoriteName)?1:-1});
+			for (var i = 0; i < routes.length; i++) {
+				showRoute(routes[i], i, routes[i].FavoriteName);
+			}
+
 		}
 
 		function usedFavorite(favorite) {
@@ -600,6 +608,10 @@
 				}
 				if (route.InternalPort != favorite.InternalPort) {
 					continue;
+				}
+
+				if (route.FavoriteName == "") {
+					ROUTES[i].FavoriteName = favorite.FavoriteName;
 				}
 
 				return true;
@@ -660,6 +672,7 @@
 			getPorts();
 			fetchRoutes();
 			fetchFavorites();
+			show();
 		}
 
 		function loginForm(form) {
