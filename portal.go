@@ -489,6 +489,39 @@ func ListUsers(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+func ChangePassword(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	newpassword := r.PostForm.Get("newpassword")
+
+	if username == "" || password == "" || newpassword == "" {
+		w.Write([]byte("ERROR INPUT"))
+		return
+	}
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	err = boltdb.UpdateUserPassword(username, newpassword)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte("ERROR UPDATE FAILED"))
+		return
+	}
+
+	log.Println("user password changed:", username)
+	w.Write([]byte("OK"))
+}
+
 func redirectTLS(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
 }
@@ -534,6 +567,7 @@ func main() {
 	mux.HandleFunc("/addUser", AddUser)
 	mux.HandleFunc("/deleteUser", DeleteUser)
 	mux.HandleFunc("/listUsers", ListUsers)
+	mux.HandleFunc("/changePassword", ChangePassword)
 
 	port80 := &http.Server{}
 

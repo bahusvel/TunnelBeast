@@ -125,7 +125,7 @@
 			background: #f2f2f2;
 			width: 100%;
 			border: 0;
-			margin: 0 0 15px;
+			margin: 15 0 0px;
 			padding: 15px;
 			box-sizing: border-box;
 			font-size: 14px;
@@ -154,6 +154,7 @@
 			background: #4CAF50;
 			width: 100%;
 			border: 0;
+			margin: 15 0 0px;
 			padding: 15px;
 			color: #FFFFFF;
 			font-size: 14px;
@@ -443,15 +444,17 @@
 
 		function addFavorite(index) {
 			var route = ROUTES[index];
+			var delErrorElement = document.getElementById("deleteFavoriteError");
 
 			var FAVORITENAME = prompt("Please enter a name for your favorite route: ", "myRoute");
-			if (FAVORITENAME == null) {
+			if (FAVORITENAME.length == 0) {
+				delErrorElement.removeAttribute("hidden");
+				delErrorElement.innerHTML = "Favorite route name cannot be empty.";
 				return;
 			}
 
 			var params = `favoritename=${FAVORITENAME}&username=${USERNAME}&password=${PASSWORD}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
 			var xhr = new XMLHttpRequest();
-			var delErrorElement = document.getElementById("deleteFavoriteError");
 
 			xhr.open('POST', "/addFavorite", false);
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -528,7 +531,7 @@
 			return false;
 		}
 
-		function logoutForm(form) {
+		function logoutForm() {
 			USERNAME = "";
 			PASSWORD = "";
 			document.getElementById("route-float").setAttribute("hidden", "true");
@@ -537,7 +540,7 @@
 			document.getElementById("userform").setAttribute("hidden", "true");
 			document.getElementById("mapform").setAttribute("hidden", "true");
 			document.getElementById("login-form").removeAttribute("hidden");
-			document.getElementById("logout-form").setAttribute("hidden", "true");
+			document.getElementById("buttons-form").setAttribute("hidden", "true");
 			return false;
 		}
 
@@ -628,7 +631,7 @@
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 			xhr.send(params);
 			if (xhr.responseText in map) {
-				return
+				return;
 			}
 
 			var users = JSON.parse(xhr.responseText);
@@ -643,6 +646,43 @@
 					showUser(users[i], i);
 				}
 			}
+		}
+
+
+		function changePassword() {
+			var errorElement = document.getElementById("changePasswordError");
+			var newPassword = prompt("Please input your new password: ");
+			if (newPassword.length == 0) {
+				errorElement.removeAttribute("hidden");
+				errorElement.innerHTML = "Password cannot be empty.";
+				return;
+			}
+
+			var params = `username=${USERNAME}&password=${PASSWORD}&newpassword=${newPassword}`;
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', "/changePassword", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			
+			xhr.onreadystatechange = function () {
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					if (xhr.responseText == "OK") {
+						errorElement.setAttribute("hidden", "true");
+						PASSWORD = newPassword;
+						return;
+					}
+
+					if (!(xhr.responseText in map)) {
+						errorElement.removeAttribute("hidden");
+						errorElement.innerHTML = "Change password failed. Please try again. <br/><br/>";
+						return;
+					}
+
+					errorElement.removeAttribute("hidden");
+					errorElement.innerHTML = map[xhr.responseText];
+				}
+			}
+			xhr.send(params);
+			return false;
 		}
 
 		function getPorts() {
@@ -711,8 +751,9 @@
 							document.getElementById("login-form").setAttribute("hidden", "true");
 							document.getElementById("route-float").removeAttribute("hidden");
 							document.getElementById("favorite-float").removeAttribute("hidden");
-							document.getElementById("logout-form").removeAttribute("hidden");
+							document.getElementById("buttons-form").removeAttribute("hidden");
 							document.getElementById("mapform").removeAttribute("hidden");
+							document.getElementById("authFail").setAttribute("hidden", "true");
 							console.log("Auth success");
 							refresh();
 							break;
@@ -801,10 +842,11 @@
 			<label hidden="true" class="errorMessage" id="deleteUserError" for></label>
 		</div>
 
-		<form action="#" onsubmit="return logoutForm(this);" hidden="true" id="logout-form">
-			<button type="submit">LOGOUT</button>
+		<form action="#" hidden="true" id="buttons-form">
+			<button onclick="changePassword()">Change Password</button>
+			<button onclick="logoutForm()">LOGOUT</button>
+			<label hidden="true" class="errorMessage" id="changePasswordError" for></label>
 		</form>
-
 	</div>
 </body>
 

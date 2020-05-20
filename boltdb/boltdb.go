@@ -187,7 +187,10 @@ func UpdateUserPassword(username string, password string) error {
 		return err
 	}
 
-	user.Password = password
+	rawHash := sha256.Sum256([]byte(password))
+	hashpwd := hex.EncodeToString(rawHash[:])
+	user.Password = hashpwd
+
 	err = saveUser(username, user)
 	if err != nil {
 		log.Println(err)
