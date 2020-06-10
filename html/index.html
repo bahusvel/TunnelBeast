@@ -80,7 +80,7 @@
 			width: 18px;
 			border: 0;
 			margin-left: 2px;
-			padding: 8px;
+			padding: 3px;
 			color: #FFFFFF;
 			font-size: 14px;
 			-webkit-transition: all 0.3 ease;
@@ -97,7 +97,7 @@
 			width: 18px;
 			border: 0;
 			margin-left: 2px;
-			padding: 8px;
+			padding: 3px;
 			color: #FFFFFF;
 			font-size: 14px;
 			-webkit-transition: all 0.3 ease;
@@ -306,6 +306,9 @@
 					<td><div class="${btnAttr}" onclick="useFavorite(${index});">
 						<i class="fas fa-plus-circle"></i></div>
 					</td>
+					<td><div class="small-button" onclick="addSharedLink(${index});">
+						<i class="far fa-share-square"></i>
+					</td>
 				</tr>`
 			$("#favorites").append(html);
 		}
@@ -407,7 +410,6 @@
 
 		function useFavorite(index) {
 			var favorite = FAVORITES[index];
-
 			var params = `username=${USERNAME}&password=${PASSWORD}&internalip=${favorite.DestinationIP}&externalport=${favorite.ExternalPort}&internalport=${favorite.InternalPort}`;
 			var xhr = new XMLHttpRequest();
 			var addErrorElement = document.getElementById("addRouteError");
@@ -439,6 +441,28 @@
 
 			xhr.send(params);
 			refresh();
+			return false;
+		}
+
+		function addSharedLink(index) {
+			var favorite = FAVORITES[index];
+			var params = `username=${USERNAME}&password=${PASSWORD}&internalip=${favorite.DestinationIP}&externalport=${favorite.ExternalPort}&internalport=${favorite.InternalPort}&favoritename=${favorite.FavoriteName}`;
+			var xhr = new XMLHttpRequest();
+			var addErrorElement = document.getElementById("addRouteError");
+
+			xhr.open('POST', "/addsharedlink", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send(params);
+
+			if (xhr.responseText.includes("ERROR")) {
+				console.log("ERROR ADDSHAREDLINK: ", xhr.responseText);
+				alert("ERROR: Get shared link failed.");
+				return;
+			}
+
+			var response = `username=${USERNAME}&secret=${xhr.responseText}&internalip=${favorite.DestinationIP}&externalport=${favorite.ExternalPort}&internalport=${favorite.InternalPort}&favoritename=${favorite.FavoriteName}`;
+			var url = document.URL.concat("add?", response);
+			prompt("Copy to clipboard: Ctrl+C, Enter", url);
 			return false;
 		}
 
@@ -671,6 +695,12 @@
 						return;
 					}
 
+					if (xhr.responseText == "LDAP") {
+						errorElement.setAttribute("hidden", "true");
+						alert("You are using LDAP authentication, please update your password in LDAP portal.");
+						return;						
+					}
+
 					if (!(xhr.responseText in map)) {
 						errorElement.removeAttribute("hidden");
 						errorElement.innerHTML = "Change password failed. Please try again. <br/><br/>";
@@ -695,7 +725,6 @@
 			console.log(xhr.responseText);
 
 			var ports = JSON.parse(xhr.responseText);
-
 			var node = document.getElementById("port-select")
 
 			while (node.hasChildNodes()) {
@@ -731,9 +760,8 @@
 				return false;
 			}
 			var http = new XMLHttpRequest();
-			var url = "/auth";
 			var params = `username=${username}&password=${password}`;
-			http.open("POST", url, true);
+			http.open('POST', "/auth", true);
 			http.setRequestHeader("Content-type",
 				"application/x-www-form-urlencoded");
 			http.onreadystatechange = function () {

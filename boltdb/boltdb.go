@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"math/rand"
 	"sort"
 
 	"github.com/boltdb/bolt"
@@ -16,17 +17,19 @@ type Favorite struct {
 	DestinationIP string
 	ExternalPort  string
 	InternalPort  string
+	Secret        string
 }
 
 type User struct {
-	Password  string //hashed
-	Favorites map[string]Favorite
+	Password  string              //hashed
+	Favorites map[string]Favorite //FavoriteName: Favorite
 }
 
 var (
 	db *bolt.DB
 
 	BUCKETNAME          = "user"
+	SECRETLENTH         = 10
 	ErrBucketNotCreated = errors.New("Error Bucket not created")
 	ErrBucketNotFound   = errors.New("Error Bucket not found")
 	ErrExists           = errors.New("ERROR EXISTS")
@@ -54,7 +57,7 @@ func Init(Path string) error {
 
 func AddFavorite(username string, favorite Favorite) error {
 	var user User
-	user, err := getUser(username)
+	user, err := GetUser(username)
 	if err != nil && err != ErrNotExists {
 		//ErrNotExists happens if LDAP auth used
 		log.Println(err)
@@ -74,9 +77,51 @@ func AddFavorite(username string, favorite Favorite) error {
 	return saveUser(username, user)
 }
 
+func AddSharedLink(username string, f Favorite) (secret string, err error) {
+	var user User
+	user, err = GetUser(username)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	favorite, ok := user.Favorites[f.FavoriteName]
+	if !ok {
+		log.Println("boltdb", favorite, f)
+		err = ErrNotExists
+		return
+	}
+
+	if favorite.DestinationIP != f.DestinationIP || favorite.ExternalPort != f.ExternalPort || favorite.InternalPort != f.InternalPort {
+		err = errors.New("ERROR INPUT")
+		return
+	}
+
+	if favorite.Secret != "" && len(favorite.Secret) == SECRETLENTH {
+		secret = favorite.Secret
+		return
+	}
+
+	letters := []rune("abcdefghijklmnopqrstuvwxyz")
+	b := make([]rune, SECRETLENTH)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	secret = string(b)
+	favorite.Secret = secret
+	user.Favorites[f.FavoriteName] = favorite
+	err = saveUser(username, user)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	return
+}
+
 func DeleteFavorite(username string, favoritename string) error {
 	var user User
-	user, err := getUser(username)
+	user, err := GetUser(username)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -111,7 +156,11 @@ func GetFavorite(username string, favoritename string) (value Favorite, err erro
 
 func ListFavorites(username string) (values []Favorite, err error) {
 	var user User
-	user, err = getUser(username)
+	user, err = GetUser(username)
+	if err == ErrNotExists {
+		AddUser(username, "")
+		return
+	}
 	if err != nil {
 		log.Println(err)
 		return
@@ -164,7 +213,7 @@ func AddUser(username string, password string) error {
 
 func Authenticate(username string, password string) bool {
 	var user User
-	user, err := getUser(username)
+	user, err := GetUser(username)
 	if err != nil {
 		return false
 	}
@@ -181,7 +230,7 @@ func Authenticate(username string, password string) bool {
 
 func UpdateUserPassword(username string, password string) error {
 	var user User
-	user, err := getUser(username)
+	user, err := GetUser(username)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -233,7 +282,7 @@ func ListUsers() (users []string, err error) {
 	})
 }
 
-func getUser(username string) (user User, err error) {
+func GetUser(username string) (user User, err error) {
 	return user, db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(BUCKETNAME))
 		if bucket == nil {
