@@ -4,6 +4,7 @@ type AuthProvider interface {
 	Init()
 	CheckDestinationIP(dstip string, Username string, Password string) bool
 	Authenticate(Username string, Password string) bool
+	CheckAdminPanel(Username string, Password string) bool
 }
 
 type TestAuth struct {
@@ -24,4 +25,8 @@ func (this TestAuth) Authenticate(Username string, Password string) bool {
 
 func (this TestAuth) CheckDestinationIP(dstip string, Username string, Password string) bool {
 	return true
+}
+
+func (this TestAuth) CheckAdminPanel(Username string, Password string) bool {
+	return false
 }
