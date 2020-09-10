@@ -461,7 +461,7 @@
 			}
 
 			var response = `username=${USERNAME}&secret=${xhr.responseText}&internalip=${favorite.DestinationIP}&externalport=${favorite.ExternalPort}&internalport=${favorite.InternalPort}&favoritename=${favorite.FavoriteName}`;
-			var url = document.URL.concat("add?", response);
+			var url = document.location.origin.concat("/add?", response);
 			prompt("Copy to clipboard: Ctrl+C, Enter", url);
 			return false;
 		}
