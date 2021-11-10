@@ -7,6 +7,7 @@ import (
 )
 
 type NATEntry struct {
+	FavoriteName  string
 	SourceIP      string
 	DestinationIP string
 	ExternalPort  string

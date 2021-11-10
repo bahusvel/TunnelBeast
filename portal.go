@@ -29,41 +29,82 @@ var (
 
 func AddRoute(w http.ResponseWriter, r *http.Request) {
 	log.Println("Api access", r.RemoteAddr)
+	var username, password, internalip, internalport, externalport, secret, sourceip, favoritename string
 
-	err := r.ParseForm()
-	if err != nil {
-		log.Println(err)
-		w.Write([]byte(err.Error()))
-		return
-	}
-	username := r.PostForm.Get("username")
-	password := r.PostForm.Get("password")
-	sourceip := r.PostForm.Get("sourceip")
-	internalip := r.PostForm.Get("internalip")
-	internalport := r.PostForm.Get("internalport")
-	externalport := r.PostForm.Get("externalport")
+	if r.Method == http.MethodGet {
+		fragments := r.URL.Query()
+		if len(fragments) == 0 || fragments["internalip"] == nil || fragments["internalport"] == nil || fragments["externalport"] == nil || fragments["secret"] == nil {
+			log.Println(r.URL)
+			w.Write([]byte("ERROR URL"))
+			return
+		}
 
-	log.Println(username, password, internalip, internalport, externalport)
-	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" {
-		w.Write([]byte("ERROR INPUT"))
-		return
-	}
-
-	if sourceip == "" {
 		sourceip = strings.Split(r.RemoteAddr, ":")[0]
+		username = fragments["username"][0]
+		internalip = fragments["internalip"][0]
+		internalport = fragments["internalport"][0]
+		externalport = fragments["externalport"][0]
+		secret = fragments["secret"][0]
+		favoritename = fragments["favoritename"][0]
+
+		if secret == "" || internalip == "" || internalport == "" || externalport == "" || sourceip == "" || favoritename == "" {
+			w.Write([]byte("ERROR INPUT"))
+			return
+		}
+
+		user, err := boltdb.GetUser(username)
+		if err != nil {
+			w.Write([]byte("ERROR USER"))
+			return
+		}
+
+		favorite, ok := user.Favorites[favoritename]
+		if !ok || secret != favorite.Secret {
+			w.Write([]byte("ERROR AUTH"))
+			return
+		}
+
+		if internalip != favorite.DestinationIP || internalport != favorite.InternalPort || externalport != favorite.ExternalPort {
+			w.Write([]byte("ERROR INPUT"))
+			return
+		}
 	}
 
+	if r.Method == http.MethodPost {
+		err := r.ParseForm()
+		if err != nil {
+			log.Println(err)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		username = r.PostForm.Get("username")
+		password = r.PostForm.Get("password")
+		sourceip = r.PostForm.Get("sourceip")
+		internalip = r.PostForm.Get("internalip")
+		internalport = r.PostForm.Get("internalport")
+		externalport = r.PostForm.Get("externalport")
+
+		log.Println(username, internalip, internalport, externalport)
+		if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" {
+			w.Write([]byte("ERROR INPUT"))
+			return
+		}
+
+		if sourceip == "" {
+			sourceip = strings.Split(r.RemoteAddr, ":")[0]
+		}
+
+		if !authProvider.Authenticate(username, password) {
+			w.Write([]byte("ERROR AUTH"))
+			return
+		}
+
+		if !authProvider.CheckDestinationIP(internalip, username, password) {
+			w.Write([]byte("ERROR ACCESS DENIED"))
+			return
+		}
+	}
 	entry := iptables.NATEntry{SourceIP: sourceip, DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport}
-
-	if !authProvider.Authenticate(username, password) {
-		w.Write([]byte("ERROR AUTH"))
-		return
-	}
-
-	if !authProvider.CheckDestinationIP(internalip, username, password) {
-		w.Write([]byte("ERROR ACCESS DENIED"))
-		return
-	}
 
 	if entries, ok := connectionTable[username]; ok {
 		if _, ok := entries[entry]; ok {
@@ -88,7 +129,7 @@ func AddRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = iptables.NewRoute(entry)
+	err := iptables.NewRoute(entry)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return
@@ -261,10 +302,15 @@ func Authenticate(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ERROR AUTH"))
 		return
 	}
+
+	if authProvider.CheckAdminPanel(username, password) {
+		w.Write([]byte("ADMIN"))
+		return
+	}
 	w.Write([]byte("OK"))
 }
 
-func AddRecord(w http.ResponseWriter, r *http.Request) {
+func AddFavorite(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
@@ -277,7 +323,7 @@ func AddRecord(w http.ResponseWriter, r *http.Request) {
 	internalip := r.PostForm.Get("internalip")
 	internalport := r.PostForm.Get("internalport")
 	externalport := r.PostForm.Get("externalport")
-	recordname := r.PostForm.Get("recordname")
+	favoritename := r.PostForm.Get("favoritename")
 
 	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" {
 		w.Write([]byte("ERROR INPUT"))
@@ -289,21 +335,21 @@ func AddRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := username + "/favorite/" + recordname
-	value := boltdb.RecordValue{DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport, RecordName: recordname}
+	key := username
+	favorite := boltdb.Favorite{DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport, FavoriteName: favoritename}
 
-	err = boltdb.AddRecord(key, value)
+	err = boltdb.AddFavorite(key, favorite)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	log.Println("favorite route added: ", username, recordname, externalport, internalip, internalport)
+	log.Println("favorite route added: ", username, favoritename, externalport, internalip, internalport)
 	w.Write([]byte("OK"))
 }
 
-func DeleteRecord(w http.ResponseWriter, r *http.Request) {
+func AddSharedLink(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
@@ -316,9 +362,42 @@ func DeleteRecord(w http.ResponseWriter, r *http.Request) {
 	internalip := r.PostForm.Get("internalip")
 	internalport := r.PostForm.Get("internalport")
 	externalport := r.PostForm.Get("externalport")
-	recordname := r.PostForm.Get("recordname")
+	favoritename := r.PostForm.Get("favoritename")
 
-	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" || recordname == "" {
+	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" {
+		w.Write([]byte("ERROR INPUT EMPTY"))
+		return
+	}
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	favorite := boltdb.Favorite{DestinationIP: internalip, ExternalPort: externalport, InternalPort: internalport, FavoriteName: favoritename}
+	secret, err := boltdb.AddSharedLink(username, favorite)
+	if len(secret) != boltdb.SECRETLENTH || err != nil {
+		w.Write([]byte("ERROR INPUT"))
+		log.Println(err)
+		return
+	}
+
+	w.Write([]byte(secret))
+}
+
+func AddUser(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	newusername := r.PostForm.Get("newusername")
+	newpassword := r.PostForm.Get("newpassword")
+
+	if username == "" || password == "" || newusername == "" || newpassword == "" {
 		w.Write([]byte("ERROR INPUT"))
 		return
 	}
@@ -328,20 +407,99 @@ func DeleteRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := username + "/favorite/" + recordname
+	if !authProvider.CheckAdminPanel(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
 
-	err = boltdb.DeleteRecord(key)
+	err = boltdb.AddUser(newusername, newpassword)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	log.Println("favorite route deleted: ", username, recordname, externalport, internalip, internalport)
+	log.Println("new user added: ", newusername, "/", newpassword)
 	w.Write([]byte("OK"))
 }
 
-func ListRecords(w http.ResponseWriter, r *http.Request) {
+func DeleteFavorite(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	internalip := r.PostForm.Get("internalip")
+	internalport := r.PostForm.Get("internalport")
+	externalport := r.PostForm.Get("externalport")
+	favoritename := r.PostForm.Get("favoritename")
+
+	if username == "" || password == "" || internalip == "" || internalport == "" || externalport == "" || favoritename == "" {
+		w.Write([]byte("ERROR INPUT"))
+		return
+	}
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	key := username
+
+	err = boltdb.DeleteFavorite(key, favoritename)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	log.Println("favorite route deleted: ", username, favoritename, externalport, internalip, internalport)
+	w.Write([]byte("OK"))
+}
+
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	user := r.PostForm.Get("user")
+
+	if username == "" || password == "" || user == "" {
+		w.Write([]byte("ERROR INPUT"))
+		return
+	}
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	if !authProvider.CheckAdminPanel(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	err = boltdb.DeleteUser(user)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	log.Println("user deleted: ", user)
+	w.Write([]byte("OK"))
+}
+
+func ListFavorites(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
@@ -357,11 +515,13 @@ func ListRecords(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	values := make([]boltdb.RecordValue, 0)
-	values, err = boltdb.ListRecords(username)
-	if err != nil {
-		log.Fatal(err)
-		w.Write([]byte("ERROR RECORD"))
+	values := make([]boltdb.Favorite, 0)
+	values, err = boltdb.ListFavorites(username)
+
+	if err != nil && err != boltdb.ErrNotExists {
+		w.Write([]byte("ERROR DB"))
+		log.Println(err)
+		return
 	}
 
 	data, err := json.Marshal(values)
@@ -370,6 +530,81 @@ func ListRecords(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(data)
+}
+
+func ListUsers(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	if !authProvider.CheckAdminPanel(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	keys := make([]string, 0)
+	keys, err = boltdb.ListUsers()
+	if err != nil {
+		log.Fatal(err)
+		w.Write([]byte("ERROR LISTUSERS"))
+	}
+
+	data, err := json.Marshal(keys)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.Write(data)
+}
+
+func ChangePassword(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	newpassword := r.PostForm.Get("newpassword")
+
+	if username == "" || password == "" || newpassword == "" {
+		w.Write([]byte("ERROR INPUT"))
+		return
+	}
+
+	if !authProvider.Authenticate(username, password) {
+		w.Write([]byte("ERROR AUTH"))
+		return
+	}
+
+	switch authProvider.(type) {
+	case auth.LDAPAuth:
+		w.Write([]byte("LDAP"))
+		return
+	}
+
+	err = boltdb.UpdateUserPassword(username, newpassword)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte("ERROR UPDATE FAILED"))
+		return
+	}
+
+	log.Println("user password changed:", username)
+	w.Write([]byte("OK"))
 }
 
 func redirectTLS(w http.ResponseWriter, r *http.Request) {
@@ -384,18 +619,18 @@ func main() {
 	config.LoadConfig(os.Args[1], &conf)
 	log.Printf("%+v\n", conf)
 
+	err := boltdb.Init(conf.DBpath)
+	if err != nil {
+		log.Println("Error open boltdb", err)
+	}
+
 	authProvider = conf.AuthProvider
 	authProvider.Init()
 
-	err := iptables.Init()
+	err = iptables.Init()
 	if err != nil {
 		log.Println("Error initializing iptables", err)
 		return
-	}
-
-	err = boltdb.Init(conf.DBpath)
-	if err != nil {
-		log.Println("Error open boltdb", err)
 	}
 
 	certManager := autocert.Manager{
@@ -411,9 +646,14 @@ func main() {
 	mux.HandleFunc("/ports", ListPorts)
 	mux.HandleFunc("/auth", Authenticate)
 	mux.HandleFunc("/list", ListRoutes)
-	mux.HandleFunc("/addRecord", AddRecord)
-	mux.HandleFunc("/deleteRecord", DeleteRecord)
-	mux.HandleFunc("/listRecords", ListRecords)
+	mux.HandleFunc("/addFavorite", AddFavorite)
+	mux.HandleFunc("/deleteFavorite", DeleteFavorite)
+	mux.HandleFunc("/addsharedlink", AddSharedLink)
+	mux.HandleFunc("/listFavorites", ListFavorites)
+	mux.HandleFunc("/addUser", AddUser)
+	mux.HandleFunc("/deleteUser", DeleteUser)
+	mux.HandleFunc("/listUsers", ListUsers)
+	mux.HandleFunc("/changePassword", ChangePassword)
 
 	port80 := &http.Server{}
 

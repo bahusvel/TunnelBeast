@@ -1,4 +1,8 @@
-listendev: enp0s3
+# Authenticationg methods: test, local, ldap
+#   test:       for test purpose only
+#   local:      use local bolt DB to authenticate users, users can be managered 
+#                   by admin user defined in this configration file
+#   ldap:       authentication managed by ldap
 authmethod: ldap
 
 # provide path to .db file to save users favorite routes

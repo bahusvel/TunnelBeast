@@ -72,6 +72,42 @@
 			font-size: 14px;
 		}
 
+		.small-button {
+			font-family: "Roboto", sans-serif;
+			text-transform: uppercase;
+			outline: 0;
+			background: #4CAF50;
+			width: 18px;
+			border: 0;
+			margin-left: 2px;
+			padding: 3px;
+			color: #FFFFFF;
+			font-size: 14px;
+			-webkit-transition: all 0.3 ease;
+			transition: all 0.3 ease;
+			cursor: pointer;
+			display: inline-block;
+			text-align: center;
+		}
+
+		.unclickable {
+			font-family: "Roboto", sans-serif;
+			text-transform: uppercase;
+			outline: 0;
+			width: 18px;
+			border: 0;
+			margin-left: 2px;
+			padding: 3px;
+			color: #FFFFFF;
+			font-size: 14px;
+			-webkit-transition: all 0.3 ease;
+			transition: all 0.3 ease;
+			display: inline-block;
+			text-align: center;
+			background-color: #808080;
+			pointer-events: none;
+		}
+
 		form {
 			position: relative;
 			z-index: 1;
@@ -89,7 +125,7 @@
 			background: #f2f2f2;
 			width: 100%;
 			border: 0;
-			margin: 0 0 15px;
+			margin: 15 0 0px;
 			padding: 15px;
 			box-sizing: border-box;
 			font-size: 14px;
@@ -118,30 +154,13 @@
 			background: #4CAF50;
 			width: 100%;
 			border: 0;
+			margin: 15 0 0px;
 			padding: 15px;
 			color: #FFFFFF;
 			font-size: 14px;
 			-webkit-transition: all 0.3 ease;
 			transition: all 0.3 ease;
 			cursor: pointer;
-		}
-
-		.small-button {
-			font-family: "Roboto", sans-serif;
-			text-transform: uppercase;
-			outline: 0;
-			background: #4CAF50;
-			width: 18px;
-			border: 0;
-			margin-left: 2px;
-			padding: 8px;
-			color: #FFFFFF;
-			font-size: 14px;
-			-webkit-transition: all 0.3 ease;
-			transition: all 0.3 ease;
-			cursor: pointer;
-			display: inline-block;
-			text-align: center;
 		}
 
 		body {
@@ -163,17 +182,17 @@
 		var USERNAME = "";
 		var PASSWORD = "";
 		var ROUTES = [];
-		var RECORDS = [];
+		var FAVORITES = [];
+		var USERS = [];
 
 		var map = {
 			"ERROR ACCESS DENIED": "Access denied. Please contact your administrator. <br/><br/>",
-			"ERROR EXISTS": "Routes exists. Please check your input data. <br/><br/>",
+			"ERROR EXISTS": "Record exists. Please check your input data. <br/><br/>",
 			"ERROR PORT OCCUPIED": "Port occupied. Please try another port. <br/><br/>",
 			"ERROR INPUT": "Input error. Please check your input data. <br/><br/>",
 			"ERROR AUTH": "Incorrect user ID or password. <br/><br/>",
-			"ERROR NOT EXIST": "The route you try to delete is not exist.<br/><br/>",
-			"ERROR RECORD": "Connection to Database error, try it again later. <br/><br/>",
-			"ERROR RECORD EXISTS": "Record name conflict, try another name. <br/><br/>"
+			"ERROR NOT EXIST": "The record you try to delete is not exist.<br/><br/>",
+			"ERROR DB": "Connection to Database error, try it again later. <br/><br/>",
 		};
 
 		function create(htmlStr) {
@@ -188,9 +207,7 @@
 
 		function deleteRoute(index) {
 			var route = ROUTES[index];
-
-			var params = `username=${USERNAME}&password=${PASSWORD}&client=${route.Client}&sourceip=${route.SourceIP}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
-
+			var params = `username=${USERNAME}&password=${PASSWORD}&sourceip=${route.SourceIP}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
 			var xhr = new XMLHttpRequest();
 			var delErrorElement = document.getElementById("deleteRouteError");
 
@@ -218,53 +235,105 @@
 			}
 
 			xhr.send(params);
-
 			refresh();
 			return false;
 		}
 
-		function showRoute(route, index) {
+		function deleteUser(index) {
+			var user = USERS[index];
+			var params = `username=${USERNAME}&password=${PASSWORD}&user=${user}`;
+			var xhr = new XMLHttpRequest();
+			var delErrorElement = document.getElementById("deleteUserError");
+
+			xhr.open('POST', "/deleteUser", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					document.getElementById("addUserError").setAttribute("hidden", "true");
+
+					if (xhr.responseText == "OK") {
+						delErrorElement.setAttribute("hidden", "true");
+						return;
+					}
+
+					delErrorElement.removeAttribute("hidden");
+					if (!(xhr.responseText in map)) {
+						delErrorElement.innerHTML = "User delete failed. Please try again. <br/><br/>";
+						return;
+					}
+
+					delErrorElement.innerHTML = map[xhr.responseText];
+				}
+			}
+
+			xhr.send(params);
+			fetchUsers();
+			return false;
+		}
+
+		function showRoute(route, index, favoritename) {
 			var html =
 				`<tr>
+					<td class="name-field">
+						${favoritename}
+					</td>
 					<td class="grey-field">
 						${route.SourceIP} -> ${route.ExternalPort}:${route.DestinationIP}:${route.InternalPort}
 					</td>
 					<td><div class="small-button" onclick="deleteRoute(${index});">
 						<i class="fas fa-trash-alt"></i></div>
 					</td>
-					<td><div class="small-button" onclick="addRecord(${index});">
+					<td><div class="small-button" onclick="addFavorite(${index});">
 						<i class="far fa-heart"></i></div>
 					</td>
 				</tr>`
 			$("#routes").append(html);
 		}
 
-		function showRecord(record, index) {
+		function showFavorite(favorite, index, btnAttr) {
 			var html =
 				`<tr>
 					<td class="name-field">
-						${record.RecordName}
+						${favorite.FavoriteName}
 					</td>
 				 	<td class="grey-field">
-						${record.ExternalPort} -> ${record.DestinationIP}:${record.InternalPort}
+						${favorite.ExternalPort} -> ${favorite.DestinationIP}:${favorite.InternalPort}
 					</td>
-					<td><div class="small-button" onclick="deleteRecord(${index});">
+					<td><div class="small-button" onclick="deleteFavorite(${index});">
 						<i class="fas fa-trash-alt"></i></div>
 					</td>
-					<td><div class="small-button" onclick="useRecord(${index});">
+					<td><div class="${btnAttr}" onclick="useFavorite(${index});">
 						<i class="fas fa-plus-circle"></i></div>
 					</td>
+					<td><div class="small-button" onclick="addSharedLink(${index});">
+						<i class="far fa-share-square"></i>
+					</td>
 				</tr>`
-			$("#records").append(html);
+			$("#favorites").append(html);
 		}
 
-		function deleteRecord(index) {
-			var record = RECORDS[index];
-			var params = `recordname=${record.RecordName}&username=${USERNAME}&password=${PASSWORD}&internalip=${record.DestinationIP}&externalport=${record.ExternalPort}&internalport=${record.InternalPort}`;
-			var xhr = new XMLHttpRequest();
-			var delErrorElement = document.getElementById("deleteRecordError");
+		function showUser(user, index) {
+			var html =
+				`<tr>
+					<td class="grey-field">${user}</td>
+					<td><div class="small-button" onclick="deleteUser(${index});">
+						<i class="fas fa-trash-alt"></i></div>
+					</td>
+				</tr>`
+			$("#users").append(html);
+		}
 
-			xhr.open('POST', "/deleteRecord", false);
+		function deleteFavorite(index) {
+			var favorite = FAVORITES[index];
+			var params = `favoritename=${favorite.FavoriteName}&username=${USERNAME}&password=${PASSWORD}&internalip=${favorite.DestinationIP}&externalport=${favorite.ExternalPort}&internalport=${favorite.InternalPort}`;
+			var xhr = new XMLHttpRequest();
+			var delErrorElement = document.getElementById("deleteFavoriteError");
+			
+			if (!confirm("Are you sure you wish to delete this favorite?")) {
+				return false;
+			}
+			xhr.open('POST', "/deleteFavorite", false);
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 
 			xhr.onreadystatechange = function () {
@@ -276,7 +345,7 @@
 
 					if (!(xhr.responseText in map)) {
 						delErrorElement.removeAttribute("hidden");
-						delErrorElement.innerHTML = "Record delete failed. Please try again. <br/><br/>";
+						delErrorElement.innerHTML = "Favorite delete failed. Please try again. <br/><br/>";
 						return;
 					}
 
@@ -339,10 +408,9 @@
 			return false;
 		}
 
-		function useRecord(index) {
-			var record = RECORDS[index];
-
-			var params = `username=${USERNAME}&password=${PASSWORD}&internalip=${record.DestinationIP}&externalport=${record.ExternalPort}&internalport=${record.InternalPort}`;
+		function useFavorite(index) {
+			var favorite = FAVORITES[index];
+			var params = `username=${USERNAME}&password=${PASSWORD}&internalip=${favorite.DestinationIP}&externalport=${favorite.ExternalPort}&internalport=${favorite.InternalPort}`;
 			var xhr = new XMLHttpRequest();
 			var addErrorElement = document.getElementById("addRouteError");
 
@@ -359,8 +427,8 @@
 					}
 
 					addErrorElement.removeAttribute("hidden");
-					document.getElementById("map_internalip").value = record.DestinationIP;
-					document.getElementById("map_internalport").value = record.InternalPort;
+					document.getElementById("map_internalip").value = favorite.DestinationIP;
+					document.getElementById("map_internalport").value = favorite.InternalPort;
 
 					if (!(xhr.responseText in map)) {
 						addErrorElement.innerHTML = "Active favorite route failed. Please try again. <br/><br/>";
@@ -376,19 +444,43 @@
 			return false;
 		}
 
-		function addRecord(index) {
-			var route = ROUTES[index];
+		function addSharedLink(index) {
+			var favorite = FAVORITES[index];
+			var params = `username=${USERNAME}&password=${PASSWORD}&internalip=${favorite.DestinationIP}&externalport=${favorite.ExternalPort}&internalport=${favorite.InternalPort}&favoritename=${favorite.FavoriteName}`;
+			var xhr = new XMLHttpRequest();
+			var addErrorElement = document.getElementById("addRouteError");
 
-			var RECORDNAME = prompt("Please enter a name for your favorite route: ", "myRoute");
-			if (RECORDNAME == null) {
+			xhr.open('POST', "/addsharedlink", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send(params);
+
+			if (xhr.responseText.includes("ERROR")) {
+				console.log("ERROR ADDSHAREDLINK: ", xhr.responseText);
+				alert("ERROR: Get shared link failed.");
 				return;
 			}
 
-			var params = `recordname=${RECORDNAME}&username=${USERNAME}&password=${PASSWORD}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
-			var xhr = new XMLHttpRequest();
-			var delErrorElement = document.getElementById("deleteRecordError");
+			var response = `username=${USERNAME}&secret=${xhr.responseText}&internalip=${favorite.DestinationIP}&externalport=${favorite.ExternalPort}&internalport=${favorite.InternalPort}&favoritename=${favorite.FavoriteName}`;
+			var url = document.location.origin.concat("/add?", response);
+			prompt("Copy to clipboard: Ctrl+C, Enter", url);
+			return false;
+		}
 
-			xhr.open('POST', "/addRecord", false);
+		function addFavorite(index) {
+			var route = ROUTES[index];
+			var delErrorElement = document.getElementById("deleteFavoriteError");
+
+			var FAVORITENAME = prompt("Please enter a name for your favorite route: ", "myRoute");
+			if (FAVORITENAME.length == 0) {
+				delErrorElement.removeAttribute("hidden");
+				delErrorElement.innerHTML = "Favorite route name cannot be empty.";
+				return;
+			}
+
+			var params = `favoritename=${FAVORITENAME}&username=${USERNAME}&password=${PASSWORD}&internalip=${route.DestinationIP}&externalport=${route.ExternalPort}&internalport=${route.InternalPort}`;
+			var xhr = new XMLHttpRequest();
+
+			xhr.open('POST', "/addFavorite", false);
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 
 			xhr.onreadystatechange = function () {
@@ -415,14 +507,64 @@
 			return false;
 		}
 
-		function logoutForm(form) {
+		function addUser(form) {
+			var newusername = form.newusername.value;
+			var newpassword = form.newpassword.value;
+			var error = "";
+
+			if (newusername.length == 0) {
+				error += 'Username is required';
+			}
+			if (newpassword.length == 0) {
+				error += 'Password is required';
+			}
+
+			if (error) {
+				alert(error);
+				return false;
+			}
+
+			var params = `username=${USERNAME}&password=${PASSWORD}&newusername=${newusername}&newpassword=${newpassword}`;
+			var xhr = new XMLHttpRequest();
+			var addErrorElement =document.getElementById("addUserError");
+
+			xhr.open('POST', "/addUser", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					document.getElementById("deleteUserError").setAttribute("hidden", "true");
+
+					if (xhr.responseText == "OK") {
+						addErrorElement.setAttribute("hidden", "true");
+						return;
+					}
+
+					addErrorElement.removeAttribute("hidden");
+					if (!(xhr.responseText in map)) {
+						addErrorElement.innerHTML = "Add new user failed. Please contact the input data. <br/><br/>";
+						return;
+					}
+
+					addErrorElement.innerHTML = map[xhr.responseText];
+				}
+			}
+
+			xhr.send(params);
+			fetchUsers();
+			return false;
+		}
+
+		function logoutForm() {
 			USERNAME = "";
 			PASSWORD = "";
 			document.getElementById("route-float").setAttribute("hidden", "true");
-			document.getElementById("record-float").setAttribute("hidden", "true");
+			document.getElementById("favorite-float").setAttribute("hidden", "true");
+			document.getElementById("users-float").setAttribute("hidden", "true");
+			document.getElementById("userform").setAttribute("hidden", "true");
 			document.getElementById("mapform").setAttribute("hidden", "true");
 			document.getElementById("login-form").removeAttribute("hidden");
-			document.getElementById("logout-form").setAttribute("hidden", "true");
+			document.getElementById("buttons-form").setAttribute("hidden", "true");
 			return false;
 		}
 
@@ -438,39 +580,139 @@
 			var routes = JSON.parse(xhr.responseText);
 
 			ROUTES = routes;
+		}
+
+		function fetchFavorites() {
+			var params = `username=${USERNAME}&password=${PASSWORD}`;
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', "/listFavorites", false);
+
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send(params);
+			var favorites = JSON.parse(xhr.responseText);
+
+			FAVORITES = favorites;
+		}
+
+		function show() {
+			var node = document.getElementById("favorites");
+			while (node.hasChildNodes()) {
+				node.removeChild(node.lastChild);
+			}
+			var favorites = FAVORITES;
+			if (FAVORITES) {
+				for (var i = 0; i < favorites.length; i++) {
+					var btnAttr = "small-button";
+					if (usedFavorite(favorites[i])) {
+						btnAttr = "unclickable";
+					}
+					showFavorite(favorites[i], i, btnAttr);
+				}
+			}
 
 			var node = document.getElementById("routes");
 			while (node.hasChildNodes()) {
 				node.removeChild(node.lastChild);
 			}
 
+			var routes = ROUTES;
+			routes.sort(function(a, b){return (a.FavoriteName>b.FavoriteName)?1:-1});
 			for (var i = 0; i < routes.length; i++) {
-				showRoute(routes[i], i);
+				showRoute(routes[i], i, routes[i].FavoriteName);
 			}
+
 		}
 
-		function fetchRecords() {
+		function usedFavorite(favorite) {
+			for (var i=0; i<ROUTES.length; i++) {
+				var route = ROUTES[i];
+				if (route.ExternalPort != favorite.ExternalPort) {
+					continue;
+				}
+				if (route.DestinationIP != favorite.DestinationIP) {
+					continue;
+				}
+				if (route.InternalPort != favorite.InternalPort) {
+					continue;
+				}
+
+				if (route.FavoriteName == "") {
+					ROUTES[i].FavoriteName = favorite.FavoriteName;
+				}
+
+				return true;
+			}
+			return false;
+		}
+
+		function fetchUsers() {
 			var params = `username=${USERNAME}&password=${PASSWORD}`;
 
 			var xhr = new XMLHttpRequest();
-			xhr.open('POST', "/listRecords", false);
+			xhr.open('POST', "/listUsers", false)
 
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 			xhr.send(params);
-			var records = JSON.parse(xhr.responseText);
+			if (xhr.responseText in map) {
+				return;
+			}
 
-			RECORDS = records;
-
-			var node = document.getElementById("records");
+			var users = JSON.parse(xhr.responseText);
+			USERS = users;
+			var node = document.getElementById("users");
 			while (node.hasChildNodes()) {
 				node.removeChild(node.lastChild);
 			}
 
-			if (RECORDS) {
-				for (var i = 0; i < records.length; i++) {
-					showRecord(records[i], i);
+			if (USERS) {
+				for (var i=0; i<users.length; i++) {
+					showUser(users[i], i);
 				}
 			}
+		}
+
+
+		function changePassword() {
+			var errorElement = document.getElementById("changePasswordError");
+			var newPassword = prompt("Please input your new password: ");
+			if (newPassword.length == 0) {
+				errorElement.removeAttribute("hidden");
+				errorElement.innerHTML = "Password cannot be empty.";
+				return;
+			}
+
+			var params = `username=${USERNAME}&password=${PASSWORD}&newpassword=${newPassword}`;
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', "/changePassword", false);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			
+			xhr.onreadystatechange = function () {
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					if (xhr.responseText == "OK") {
+						errorElement.setAttribute("hidden", "true");
+						PASSWORD = newPassword;
+						return;
+					}
+
+					if (xhr.responseText == "LDAP") {
+						errorElement.setAttribute("hidden", "true");
+						alert("You are using LDAP authentication, please update your password in LDAP portal.");
+						return;						
+					}
+
+					if (!(xhr.responseText in map)) {
+						errorElement.removeAttribute("hidden");
+						errorElement.innerHTML = "Change password failed. Please try again. <br/><br/>";
+						return;
+					}
+
+					errorElement.removeAttribute("hidden");
+					errorElement.innerHTML = map[xhr.responseText];
+				}
+			}
+			xhr.send(params);
+			return false;
 		}
 
 		function getPorts() {
@@ -483,7 +725,6 @@
 			console.log(xhr.responseText);
 
 			var ports = JSON.parse(xhr.responseText);
-
 			var node = document.getElementById("port-select")
 
 			while (node.hasChildNodes()) {
@@ -499,13 +740,15 @@
 		function refresh() {
 			getPorts();
 			fetchRoutes();
-			fetchRecords();
+			fetchFavorites();
+			show();
 		}
 
 		function loginForm(form) {
 			var error = "";
 			var username = form.username.value;
 			var password = form.password.value;
+
 			if (username.length == 0) {
 				error += 'Username is required\n';
 			}
@@ -517,22 +760,28 @@
 				return false;
 			}
 			var http = new XMLHttpRequest();
-			var url = "/auth";
 			var params = `username=${username}&password=${password}`;
-			http.open("POST", url, true);
+			http.open('POST', "/auth", true);
 			http.setRequestHeader("Content-type",
 				"application/x-www-form-urlencoded");
 			http.onreadystatechange = function () {
 				if (http.readyState == 4 && http.status == 200) {
 					switch (http.responseText) {
+						case "ADMIN":
+							USERNAME = username;
+							PASSWORD = password;
+							document.getElementById("users-float").removeAttribute("hidden");
+							document.getElementById("userform").removeAttribute("hidden");
+							fetchUsers();							
 						case "OK":
 							USERNAME = username;
 							PASSWORD = password;
 							document.getElementById("login-form").setAttribute("hidden", "true");
 							document.getElementById("route-float").removeAttribute("hidden");
-							document.getElementById("record-float").removeAttribute("hidden");
-							document.getElementById("logout-form").removeAttribute("hidden");
+							document.getElementById("favorite-float").removeAttribute("hidden");
+							document.getElementById("buttons-form").removeAttribute("hidden");
 							document.getElementById("mapform").removeAttribute("hidden");
+							document.getElementById("authFail").setAttribute("hidden", "true");
 							console.log("Auth success");
 							refresh();
 							break;
@@ -593,20 +842,39 @@
 			<button type="submit">Add</button>
 		</form>
 
-		<div class="white-boxed" id="record-float" hidden="true">
+		<div class="white-boxed" id="favorite-float" hidden="true">
 			Your Favorite Routes:
 			<br />
 			<table>
-				<tbody id="records">
+				<tbody id="favorites">
 				</tbody>
 			</table>
-			<label hidden="true" class="errorMessage" id="deleteRecordError" for></label>
+			<label hidden="true" class="errorMessage" id="deleteFavoriteError" for></label>
 		</div>
 
-		<form action="#" onsubmit="return logoutForm(this);" hidden="true" id="logout-form">
-			<button type="submit">LOGOUT</button>
+		<form action="#" onsubmit="return addUser(this);" id="userform" hidden="true">
+			<label hidden="true" class="errorMessage" id="addUserError" for></label>
+			Add new TunnelBeast user:
+			<input type="text" id="new_username" name="newusername" placeholder="Username"/>
+			<input type="text" id="new_password" name="newpassword" placeholder="Password"/>
+			<button type="submit">Add</button>
 		</form>
 
+		<div class="white-boxed" id="users-float" hidden="true">
+			Current Users in TunnelBeast:
+			<br/>
+			<table>
+				<tbody id="users">
+				</tbody>
+			</table>
+			<label hidden="true" class="errorMessage" id="deleteUserError" for></label>
+		</div>
+
+		<form action="#" hidden="true" id="buttons-form">
+			<button onclick="changePassword()">Change Password</button>
+			<button onclick="logoutForm()">LOGOUT</button>
+			<label hidden="true" class="errorMessage" id="changePasswordError" for></label>
+		</form>
 	</div>
 </body>
 
