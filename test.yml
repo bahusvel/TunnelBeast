@@ -3,5 +3,5 @@ ports: [2222, "443-445"]
 https: none
 dbpath: ./test.db
 authprovider:
-    Username: denis
-    Password: denis
+    users: 
+        denis: denis

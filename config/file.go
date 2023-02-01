@@ -49,6 +49,7 @@ func setField(obj interface{}, name string, value interface{}) error {
 	structFieldType := structFieldValue.Type()
 	val := reflect.ValueOf(value)
 	if structFieldType != val.Type() {
+		log.Println(val.Type())
 		return errors.New("Provided value type didn't match obj field type")
 	}
 
@@ -132,8 +133,10 @@ func LoadConfig(filePath string, conf *Configuration) {
 		fillStruct(&tmpProvider, tmpConfig.AuthProvider)
 		conf.AuthProvider = tmpProvider
 	case "test":
-		tmpProvider := auth.TestAuth{}
-		fillStruct(&tmpProvider, tmpConfig.AuthProvider)
+		tmpProvider := auth.TestAuth{Users: map[string]string{}}
+		for k, v := range tmpConfig.AuthProvider["users"].(map[interface{}]interface{}) {
+			tmpProvider.Users[k.(string)] = v.(string)
+		}
 		conf.AuthProvider = tmpProvider
 	}
 }

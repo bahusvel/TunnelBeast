@@ -7,8 +7,7 @@ type AuthProvider interface {
 }
 
 type TestAuth struct {
-	Username string
-	Password string
+	Users map[string]string
 }
 
 func (this TestAuth) Init() {
@@ -16,7 +15,7 @@ func (this TestAuth) Init() {
 }
 
 func (this TestAuth) Authenticate(Username string, Password string) bool {
-	if Username == this.Username && Password == this.Password {
+	if password, exists := this.Users[Username]; exists && password == Password {
 		return true
 	}
 	return false
